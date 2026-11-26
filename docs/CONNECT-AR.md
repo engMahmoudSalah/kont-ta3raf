@@ -25,7 +25,7 @@ Redirect URIs (انسخهم زي ما هم):
 1. افتح developers.tiktok.com وسجّل بحساب تيك توك بتاع القناة (Log in ثم Connect an app).
 2. Manage apps ثم Connect an app. اختار حسابك الشخصي (Individual). اكتب اسم التطبيق: Kont Ta3raf.
 3. في بيانات التطبيق: ارفع أيقونة (المسكوت)، والوصف، واختار Category مناسب (Education).
-4. الروابط المطلوبة: Terms of Service: https://kont-ta3raf.mahmodsalah.workers.dev/#/suggest و Privacy Policy: نفس الرابط مؤقتاً (هنضيف صفحة سياسة خصوصية لو طلبوا).
+4. الروابط المطلوبة: Terms of Service: https://kont-ta3raf.mahmodsalah.workers.dev/terms و Privacy Policy: https://kont-ta3raf.mahmodsalah.workers.dev/privacy.
 5. من Products اضغط Add products وفعّل:
    - Login Kit: في Redirect URI حط رابط TikTok أعلاه بالظبط.
    - Content Posting API: فعّل Direct Post وفعّل scopes: video.upload و video.publish. وفعّل user.info.basic من Login Kit.

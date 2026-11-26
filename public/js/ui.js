@@ -51,7 +51,7 @@ function shell(inner, route, o = {}) {
   ${u ? `${u.role !== 'user' ? link('/admin', 'لوحة التحكم') : ''}${link('/account', 'حسابي')}` : `${link('/login', 'دخول')}<a class="btn sm" href="#/signup">انضم مجاناً</a>`}</nav></div></header>
   <main id="main" class="${o.admin ? 'is-admin' : ''}">${inner}</main>
   <footer><div class="wrap"><div><b style="font-size:20px">${esc(s.siteName)}</b><br>معلومة قصيرة كل يوم، مصنّفة ومراجعة.</div>
-  <div>${s.youtube ? `<a href="${esc(s.youtube)}" target="_blank" rel="noopener">يوتيوب</a> · ` : ''}${s.tiktok ? `<a href="${esc(s.tiktok)}" target="_blank" rel="noopener">تيك توك</a>` : ''}<br><a href="#/suggest">اقترح موضوعاً</a></div></div></footer>`;
+  <div>${s.youtube ? `<a href="${esc(s.youtube)}" target="_blank" rel="noopener">يوتيوب</a> · ` : ''}${s.tiktok ? `<a href="${esc(s.tiktok)}" target="_blank" rel="noopener">تيك توك</a>` : ''}<br><a href="#/suggest">اقترح موضوعاً</a> · <a href="/privacy">الخصوصية</a> · <a href="/terms">الشروط</a></div></div></footer>`;
   if (!o.keepScroll) scrollTo(0, 0);
 }
 
