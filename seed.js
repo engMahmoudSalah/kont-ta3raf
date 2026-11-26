@@ -5,6 +5,11 @@ export const CATS = [
   { id: 'tech', name: 'تقنية', color: '#EF642D', icon: '💡' },
   { id: 'space', name: 'فضاء', color: '#463C50', icon: '🪐' },
   { id: 'body', name: 'جسم الإنسان', color: '#FADA80', icon: '🫀' },
+  { id: 'faith', name: 'ديني', color: '#9DC4D5', icon: '🕌' },
+  { id: 'stories', name: 'قصص', color: '#EF642D', icon: '📖' },
+  { id: 'weird', name: 'أفكار غريبة', color: '#463C50', icon: '🤯' },
+  { id: 'money', name: 'استثمار وأموال', color: '#F0B400', icon: '💰' },
+  { id: 'experiences', name: 'تجارب', color: '#2E6FBE', icon: '🧪' },
 ];
 const I = (id, cat, type, title, summary, body, extra = {}) => ({
   id, cat, type, title, summary, body, tags: [], status: 'published', featured: false,

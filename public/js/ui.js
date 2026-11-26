@@ -17,6 +17,11 @@ const ICONS = {
   history: '<path d="M3 20h18M12 4 4 20M12 4l8 16M8 13h8"/>',
   tech: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   space: '<circle cx="12" cy="12" r="5"/><path d="M2 15c4 3 14-1 20-6M4 9C8 6 17 8 21 15" opacity=".0"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)"/>',
+  faith: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M17 4v3M15.5 5.5h3"/>',
+  stories: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6M9 12h6"/>',
+  weird: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/><path d="M10 9.5a2 2 0 1 1 2.5 2 1 1 0 0 0-.5 1"/>',
+  money: '<circle cx="12" cy="12" r="9"/><path d="M14.5 9c-.5-1-1.5-1.5-2.500-1.500-1.500 0-2.500.8-2.500 2s1 1.700 2.500 2 2.500.8 2.500 2-1 2-2.500 2c-1.200 0-2.200-.6-2.700-1.600M12 6v1.500M12 16.500V18"/>',
+  experiences: '<path d="M12 3l2.500 5.500L20 9.200l-4 4 1 5.800-5-2.800-5 2.800 1-5.800-4-4 5.500-.7z"/>',
   body: '<path d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z"/>',
 };
 const cicon = (id, sz = 28) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="#181818" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="8"/>'}</svg>`;
