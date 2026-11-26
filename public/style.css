@@ -583,3 +583,20 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 .sg.sgx>*{min-width:0}.sg.sgx{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
 .wrap:has(>.sgx){max-width:1400px;padding:0 4vw}
 @media(max-width:860px){.sg.sgx{grid-template-columns:minmax(0,1fr)}.wrap:has(>.sgx){padding:0 18px}}
+/* v57 kids */
+.kp{display:flex;gap:14px;align-items:center;justify-content:space-between;margin:10px 0 16px;font-weight:700}.kp b{font-size:22px}
+.kp i{display:block;height:10px;margin-top:6px;border:1.5px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;min-width:150px}.kp u{display:block;height:100%;background:var(--blue)}
+.kb{text-align:center;background:var(--sand);border:var(--b);border-radius:14px;padding:6px 12px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
+.ktabs{display:flex;gap:0;margin:6px 0 16px;border:var(--b);border-radius:16px;overflow:hidden;background:#fff;box-shadow:var(--sh)}
+.ktabs button{flex:1;min-height:48px;font:inherit;font-size:18px;font-weight:800;border:0;background:none;cursor:pointer}.ktabs button+button{border-inline-start:var(--b)}
+.ktabs button[aria-selected=true]{background:var(--yellow);color:var(--ink)}
+.kt{margin-bottom:16px}.kt .kr{background:var(--sand)}
+.kc{position:relative}.kc.rd::after{content:"";position:absolute;top:10px;inset-inline-start:10px;width:18px;height:18px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);background-image:linear-gradient(45deg,transparent 45%,var(--ink) 46% 56%,transparent 57%),linear-gradient(-45deg,transparent 60%,var(--ink) 61% 73%,transparent 74%);background-size:10px 10px;background-repeat:no-repeat;background-position:center}
+.kc.open{transform:none!important;grid-column:1/-1}
+@media(min-width:900px){.kc.open{grid-column:span 2}}
+.kq{max-width:640px;margin-inline:auto}.kq .dots{margin:0 0 10px}
+.kbody .kf{padding-bottom:10px}
+@media(max-width:700px){.kp{flex-direction:column;align-items:stretch}.kb{align-self:flex-start}}
+.kc.rd::after{content:"\2713";background-image:none;display:grid;place-items:center;font-size:12px;font-weight:900;line-height:1;color:var(--ink);background:#bfe8bf}
+.kp>div:first-child{flex:1}.kp>div:first-child i{min-width:0}
+@media(max-width:700px){.kp{flex-direction:row;align-items:center;gap:10px;font-size:14px}.kp b{font-size:18px}.kb{padding:4px 10px;font-size:13px}}

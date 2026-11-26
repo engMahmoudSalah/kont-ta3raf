@@ -1,5 +1,5 @@
 // network-first service worker: always fresh when online, shell works offline
-const C = 'kt-v56';
+const C = 'kt-v58';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
