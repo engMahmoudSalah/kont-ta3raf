@@ -88,9 +88,23 @@ async function aUsers(el) {
   el.onclick = async e => { const d = e.target.dataset; if (d.b) { await api('/admin/users', 'POST', { email: d.b, banned: d.v === '1' }); aUsers(el); } };
 }
 async function aConnect(el) {
-  const d = await api('/admin/integrations');
-  const box = (n, k, ic) => `<div class="box" style="margin:10px 0"><b>${ic} ${n}</b> <span class="pill ${d[k].connected ? 'g' : 'y'}">${d[k].connected ? 'مربوط' : 'غير مربوط بعد'}</span><p style="margin-top:6px">المطلوب: ${esc(d[k].needs)}</p></div>`;
-  el.innerHTML = `${box('يوتيوب', 'youtube', '▶')}${box('تيك توك', 'tiktok', '♪')}
+  const d = await api('/admin/integrations'); const adm = S.user.role === 'admin';
+  const r = (window.HQ && HQ.get('r')) || ''; if (r) history.replaceState(null, '', '#/admin/connect');
+  const [rp, ...rm] = r.split(':'); const rmsg = rm.join(':');
+  const miss = k => d.configured[k] ? '' : '<p class="err">مفاتيح التطبيق لم تُضَف بعد على السيرفر (تُضاف عبر رابط آمن، لا تُكتب هنا).</p>';
+  const uri = k => `<p style="margin-top:8px"><small>Redirect URI:</small><br><code dir="ltr" style="user-select:all;word-break:break-all">${esc(d.redirects[k])}</code></p>`;
+  const yt = d.youtube, tt = d.tiktok;
+  const top = `${r ? `<div class="box" style="margin-bottom:10px;background:${rmsg === 'ok' ? '#dff3df' : '#fde3d8'}"><b>${rmsg === 'ok' ? 'تم الربط بنجاح: ' + (rp === 'youtube' ? 'يوتيوب' : 'تيك توك') : 'فشل الربط: ' + esc(rmsg)}</b></div>` : ''}
+  <div class="box" style="margin:10px 0"><b>▶ يوتيوب</b> <span class="pill ${yt.connected ? 'g' : 'y'}">${yt.connected ? 'مربوط: ' + esc(yt.channel) : 'غير مربوط بعد'}</span>${yt.lastError ? `<p class="err">${esc(yt.lastError)}</p>` : ''}${miss('youtube')}${uri('youtube')}
+  ${adm ? `<p class="bar" style="margin-top:10px">${yt.connected ? '<button class="btn sm" data-oa="disc-youtube">فصل</button>' : `<button class="btn sm red" data-oa="youtube" ${d.configured.youtube ? '' : 'disabled'}>ربط يوتيوب</button>`}</p>` : ''}
+  ${yt.connected && adm ? `<label class="sw" style="margin-top:10px"><input type="checkbox" id="yauto" ${d.cfg.ytAuto ? 'checked' : ''}> رد تلقائي على التعليقات الجديدة كل 15 دقيقة (بقواعد الردود التلقائية)</label>
+  <p class="bar" style="margin-top:8px"><button class="btn sm" id="ysd">فحص التعليقات بدون رد</button><button class="btn sm blue" id="ysr">فحص وردّ الآن</button><button class="btn sm" id="yan">إحصائيات 28 يوم</button></p><div id="yout"></div>
+  <details style="margin-top:10px"><summary><b>رفع فيديو على يوتيوب</b></summary><form id="yuf"><label class="f">رابط الفيديو (https مباشر لملف mp4)</label><input name="videoUrl" dir="ltr" required><label class="f">العنوان</label><input name="title" required maxlength="100"><label class="f">الوصف</label><textarea name="description"></textarea><div class="row"><div><label class="f">الخصوصية</label><select name="privacy"><option value="private">خاص</option><option value="unlisted">غير مدرج</option><option value="public">عام</option></select></div><div><label class="f">جدولة النشر (اختياري)</label><input name="when" type="datetime-local"></div></div><p style="margin-top:8px"><button class="btn sm red">رفع</button></p><div id="yuo"></div></form></details>` : ''}</div>
+  <div class="box" style="margin:10px 0"><b>♪ تيك توك</b> <span class="pill ${tt.connected ? 'g' : 'y'}">${tt.connected ? 'مربوط: ' + esc(tt.name) : 'غير مربوط بعد'}</span>${miss('tiktok')}${uri('tiktok')}
+  <p style="margin-top:6px"><small>ملاحظة: تيك توك لا يتيح الرد على التعليقات عبر واجهته العامة، والنشر المباشر يبقى خاصاً حتى تُراجَع الصلاحيات. الرفع كمسودة يعمل مباشرة.</small></p>
+  ${adm ? `<p class="bar" style="margin-top:10px">${tt.connected ? '<button class="btn sm" data-oa="disc-tiktok">فصل</button>' : `<button class="btn sm red" data-oa="tiktok" ${d.configured.tiktok ? '' : 'disabled'}>ربط تيك توك</button>`}</p>` : ''}
+  ${tt.connected && adm ? `<details style="margin-top:10px"><summary><b>رفع فيديو على تيك توك</b></summary><form id="tuf"><label class="f">رابط الفيديو (https، من نطاق موثّق في تطبيق تيك توك)</label><input name="videoUrl" dir="ltr" required><label class="f">العنوان</label><input name="title" maxlength="2000"><label class="f">الوضع</label><select name="mode"><option value="draft">مسودة في تطبيق تيك توك</option><option value="direct">نشر مباشر (خاص حتى المراجعة)</option></select><p style="margin-top:8px"><button class="btn sm red">رفع</button></p><div id="tuo"></div></form></details>` : ''}</div>`;
+  el.innerHTML = `${top}
   <p style="margin:6px 0 14px">بعد الربط، يرفع الموقع الفيديوهات وينشرها ويردّ على التعليقات. حتى ذلك الحين يمكنك تجهيز المنشورات هنا في قائمة النشر.</p>
   <div class="box"><b>قائمة النشر</b><form id="qf"><label class="f">العنوان</label><input name="title" required maxlength="140"><label class="f">الوصف والهاشتاغات</label><textarea name="caption" style="min-height:70px"></textarea>
   <div class="row"><div><label class="f">الوقت</label><input name="when" type="datetime-local"></div><div><label class="f">المنصات</label><div class="sw"><input type="checkbox" name="yt" checked> يوتيوب <input type="checkbox" name="tt" checked> تيك توك</div></div></div>
@@ -98,6 +112,19 @@ async function aConnect(el) {
   <div class="tw" style="margin-top:14px"><table class="tbl"><tr><th>العنوان</th><th>المنصات</th><th>الوقت</th><th>الحالة</th><th></th></tr>${d.queue.map(q => `<tr><td>${esc(q.title)}</td><td>${q.targets.join(' + ')}</td><td>${esc(q.when)}</td><td>${esc(q.status)}</td><td><button class="btn sm danger" data-x="${q.id}">حذف</button></td></tr>`).join('') || '<tr><td colspan="5">القائمة فارغة</td></tr>'}</table></div>`;
   $('#qf').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); await api('/admin/queue', 'POST', { title: f.get('title'), caption: f.get('caption'), when: f.get('when'), targets: [f.has('yt') && 'youtube', f.has('tt') && 'tiktok'].filter(Boolean) }); aConnect(el); };
   el.onclick = async e => { if (e.target.dataset.x) { await api('/admin/queue', 'POST', { action: 'delete', id: e.target.dataset.x }); aConnect(el); } };
+  const out = (id, h) => { const n = $(id); if (n) n.innerHTML = h; };
+  const busy = async (id, fn) => { out(id, '<p class="empty">جارٍ التنفيذ...</p>'); try { await fn(); } catch (x) { out(id, `<p class="err">${esc(x.message)}</p>`); } };
+  el.addEventListener('click', async e => {
+    const k = e.target.dataset.oa; if (!k) return;
+    if (k.startsWith('disc-')) { if (confirm('فصل الحساب؟')) { await api('/admin/oauth/disconnect', 'POST', { provider: k.slice(5) }); aConnect(el); } return; }
+    try { const r = await api('/admin/oauth/start', 'POST', { provider: k }); location.href = r.url; } catch (x) { toast(x.message); }
+  });
+  if ($('#yauto')) $('#yauto').onchange = async e => { await api('/admin/intcfg', 'POST', { ytAuto: e.target.checked }); toast(e.target.checked ? 'تم تشغيل الرد التلقائي' : 'تم الإيقاف'); };
+  const sync = dry => busy('#yout', async () => { const r = await api('/admin/yt/sync', 'POST', { dry }); out('#yout', `<p>تم فحص ${r.checked} تعليق، ${dry ? 'سيُردّ على ' + r.rows.filter(x => x.rule).length : 'تم الرد على ' + r.replied}</p>` + r.rows.map(x => `<div class="cm"><b>${esc(x.by)}</b> ${x.rule ? '↩' : ''}<div>${esc(x.text)}</div></div>`).join('')); });
+  if ($('#ysd')) { $('#ysd').onclick = () => sync(true); $('#ysr').onclick = () => { if (confirm('سيرد الموقع علناً على القناة. متأكد؟')) sync(false); }; }
+  if ($('#yan')) $('#yan').onclick = () => busy('#yout', async () => { const r = await api('/admin/yt/analytics'); const s = r.stats; out('#yout', `<p>مشتركون ${esc(s.subscriberCount || '-')} · مشاهدات ${esc(s.viewCount || '-')} · فيديوهات ${esc(s.videoCount || '-')}</p><div class="tw"><table class="tbl rt"><tr>${r.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr>${r.rows.slice(-14).map(x => `<tr>${x.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table></div>`); });
+  if ($('#yuf')) $('#yuf').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); if (f.when) f.publishAt = Date.parse(f.when + ':00+02:00'); delete f.when; if (!confirm('رفع الفيديو على قناتك؟')) return; busy('#yuo', async () => { const r = await api('/admin/yt/upload', 'POST', f); out('#yuo', `<p>تم الرفع: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`); }); };
+  if ($('#tuf')) $('#tuf').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); busy('#tuo', async () => { const r = await api('/admin/tt/upload', 'POST', f); out('#tuo', `<p>تم الإرسال (${r.mode}) رقم ${esc(r.publishId)}</p>`); }); };
 }
 async function aSettings(el) {
   const { settings: s, cats } = await api('/admin/settings'); const adm = S.user.role === 'admin';

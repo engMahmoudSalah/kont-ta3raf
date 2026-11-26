@@ -1,3 +1,4 @@
+import * as IG from './integrations.js';
 import { CATS, ITEMS, RULES, SETTINGS } from './seed.js';
 
 const J = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -212,6 +213,12 @@ export default {
       await put(env, 'user:' + u.email, u); return J(pub(u));
     }
 
+    if ((em = p.match(/^\/api\/oauth\/(youtube|tiktok)\/callback$/)) && m === 'GET') {
+      let msg = 'ok';
+      try { await IG.oauthCallback(env, url.origin, em[1], url.searchParams); } catch (x) { msg = x.message; }
+      return Response.redirect(url.origin + '/#/admin/connect?r=' + encodeURIComponent(em[1] + ':' + msg), 302);
+    }
+
     // ---------- staff ----------
     if (!p.startsWith('/api/admin/')) return err('not found', 404);
     if (!isStaff(u)) return err('forbidden', 403);
@@ -295,11 +302,19 @@ export default {
       await log(env, u.email, 'تحديث إعدادات الموقع'); return J({ ok: true });
     }
     if (p === '/api/admin/integrations' && m === 'GET') {
-      const q = await get(env, 'queue', []);
-      return J({
-        youtube: { connected: !!env.YT_REFRESH_TOKEN, needs: 'مفتاح OAuth من Google Cloud (Client ID/Secret) وتصريح قناة كنت تعرف!' },
-        tiktok: { connected: !!env.TT_ACCESS_TOKEN, needs: 'تطبيق في TikTok for Developers ومراجعة صلاحيات النشر والتعليقات' }, queue: q,
-      });
+      return J({ ...(await IG.status(env, url.origin)), queue: await get(env, 'queue', []) });
+    }
+    if (p.startsWith('/api/admin/oauth/') || p.startsWith('/api/admin/yt/') || p.startsWith('/api/admin/tt/') || p === '/api/admin/intcfg') {
+      if (!admin) return err('للأدمن فقط', 403);
+      try {
+        if (p === '/api/admin/oauth/start' && m === 'POST') return J({ url: await IG.oauthStart(env, url.origin, body.provider === 'tiktok' ? 'tiktok' : 'youtube') });
+        if (p === '/api/admin/oauth/disconnect' && m === 'POST') { await IG.disconnect(env, body.provider); await log(env, u.email, 'فصل ' + body.provider); return J({ ok: true }); }
+        if (p === '/api/admin/intcfg' && m === 'POST') { await put(env, 'intcfg', { ytAuto: !!body.ytAuto }); await log(env, u.email, 'الرد التلقائي على يوتيوب: ' + (body.ytAuto ? 'تشغيل' : 'إيقاف')); return J({ ok: true }); }
+        if (p === '/api/admin/yt/analytics') return J(await IG.ytAnalytics(env, Number(url.searchParams.get('days')) || 28));
+        if (p === '/api/admin/yt/sync' && m === 'POST') { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules, { dry: !!body.dry }); if (!body.dry) await put(env, 'rules', rules); return J(r); }
+        if (p === '/api/admin/yt/upload' && m === 'POST') { const r = await IG.ytUpload(env, body); await log(env, u.email, 'رفع فيديو يوتيوب ' + r.id); return J(r); }
+        if (p === '/api/admin/tt/upload' && m === 'POST') { const r = await IG.ttUpload(env, body); await log(env, u.email, 'رفع فيديو تيك توك'); return J(r); }
+      } catch (x) { return err(x.message, 502); }
     }
     if (p === '/api/admin/queue' && m === 'POST') {
       const q = await get(env, 'queue', []);
@@ -308,5 +323,9 @@ export default {
       await put(env, 'queue', q.slice(0, 100)); await log(env, u.email, 'إضافة لقائمة النشر'); return J({ ok: true });
     }
     return err('not found', 404);
+  },
+  async scheduled(ev, env) {
+    const cfg = await get(env, 'intcfg', { ytAuto: false }); if (!cfg.ytAuto) return;
+    try { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules); if (r.replied) await put(env, 'rules', rules); } catch (e) { const t = await get(env, 'oauth', {}); if (t.youtube) { t.youtube.err = e.message; await put(env, 'oauth', t); } }
   },
 };

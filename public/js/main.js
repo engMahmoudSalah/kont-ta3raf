@@ -5,7 +5,8 @@ const ROUTES = {
   account: () => pAccount(), plans: () => pPlans(), suggest: () => pSuggest(), admin: b => pAdmin(b),
 };
 async function route() {
-  const [a = '', b, c] = (location.hash.replace(/^#\/?/, '') || '').split('/');
+  const hq = location.hash.split('?'); window.HQ = new URLSearchParams(hq[1] || '');
+  const [a = '', b, c] = (hq[0].replace(/^#\/?/, '') || '').split('/');
   try {
     if (!S.home) S.home = await api('/home');
     if (S.token && !S.user) S.user = await api('/me').catch(() => { S.token = ''; localStorage.removeItem('kt_token'); return null; });
