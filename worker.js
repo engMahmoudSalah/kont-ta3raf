@@ -1,5 +1,7 @@
 import * as IG from './integrations.js';
 import { CATS, ITEMS, RULES, SETTINGS } from './seed.js';
+import { KIDS } from './kidsdata.js';
+const KROW = (r, i) => ({ id: i + 1, topic: r[0], level: r[1], n: r[2], t: r[3], c: r[4], q: r[5], a: r[6], w: [r[7], r[8]] });
 
 const J = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const err = (m, s = 400) => J({ error: m }, s);
@@ -131,6 +133,17 @@ export default {
       list.push(c); await put(env, key, list.slice(-200)); hit(env, 'comments');
       return J(c);
     }
+    if (p === '/api/kids/facts' && m === 'GET') {
+      const sp = url.searchParams, lv = Number(sp.get('level')) || 0, tp = sp.get('topic') || '', n = Math.min(24, Math.max(1, Number(sp.get('n')) || 6));
+      const ex = new Set((sp.get('ex') || '').split(',').map(Number).filter(Boolean));
+      const extra = await get(env, 'kids:extra', []);
+      const all = [...KIDS.map(KROW), ...extra.map((r, i) => ({ ...r, id: 1000 + i }))];
+      const pool = all.filter(f => (!lv || f.level === lv) && (!tp || f.topic === tp));
+      let fresh = pool.filter(f => !ex.has(f.id)); const recycled = fresh.length < n;
+      if (recycled) fresh = pool;
+      for (let i = fresh.length - 1; i > 0; i--) { const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [fresh[i], fresh[j]] = [fresh[j], fresh[i]]; }
+      return J({ facts: fresh.slice(0, n), total: pool.length, all: all.length, recycled });
+    }
     if (p === '/api/suggest' && m === 'POST') {
       if (!await rate(env, ip, 'sug', 5, 3600)) return err('محاولات كثيرة', 429);
       const text = clip(body.text, 500).trim(); if (text.length < 4) return err('اكتب اقتراحك');
@@ -230,6 +243,12 @@ export default {
     if (!isStaff(u)) return err('forbidden', 403);
     const admin = u.role === 'admin';
 
+    if (p === '/api/admin/kids/facts' && m === 'POST') {
+      if (!admin) return err('forbidden', 403);
+      const f = { topic: clip(body.topic, 12), level: Math.min(3, Math.max(1, Number(body.level) || 1)), n: clip(body.n, 40), t: clip(body.t, 240), c: clip(body.c, 60), q: clip(body.q, 120), a: clip(body.a, 60), w: [clip(body.w1, 60), clip(body.w2, 60)] };
+      if (!['space', 'animal', 'nature', 'body'].includes(f.topic) || !f.n || !f.t || !f.c || !f.q || !f.a || !f.w[0] || !f.w[1]) return err('كل الحقول مطلوبة');
+      const l = await get(env, 'kids:extra', []); l.push(f); await put(env, 'kids:extra', l.slice(-300)); return J({ ok: true, count: l.length });
+    }
     if (p === '/api/admin/stats') {
       const out = []; const now = Date.now();
       for (let i = 13; i >= 0; i--) {

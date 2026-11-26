@@ -14,12 +14,25 @@ async function pAdmin(sub) {
   catch (e) { el.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 }
 async function aDash(el) {
-  const d = await api('/admin/stats'), t = d.totals, mx = Math.max(1, ...d.days.map(x => x.views || 0));
-  el.innerHTML = `<div class="kp"><div><b>${t.published}/${t.items}</b><span>منشور / الكل</span></div><div><b>${fmt(t.views)}</b><span>مشاهدات</span></div><div><b>${t.users}</b><span>مستخدمون</span></div><div><b>${t.likes}</b><span>إعجابات</span></div><div><b>${t.pending}</b><span>تعليقات للمراجعة</span></div><div><b>${d.days.reduce((a, x) => a + (x.autoreplies || 0), 0)}</b><span>ردود تلقائية (14 يوماً)</span></div></div>
-  <h3 style="margin:22px 0 8px">المشاهدات آخر 14 يوماً</h3><div class="chart">${d.days.map(x => `<i title="${x.d}: ${x.views || 0}" style="height:${Math.max(3, (x.views || 0) / mx * 100)}%"></i>`).join('')}</div>
-  <div class="row" style="margin-top:22px"><div><h3>الأكثر مشاهدة</h3><div class="tw"><table class="tbl"><tr><th>العنوان</th><th>${GI.eye}</th></tr>${d.top.map(i => `<tr><td>${esc(i.title)}</td><td>${i.views}</td></tr>`).join('')}</table></div></div>
-  <div><h3>حسب التصنيف</h3><div class="tw"><table class="tbl"><tr><th>التصنيف</th><th>عناصر</th><th>${GI.eye}</th></tr>${d.byCat.map(c => `<tr><td>${esc(c.name)}</td><td>${c.n}</td><td>${c.views}</td></tr>`).join('')}</table></div></div></div>
-  <h3 style="margin-top:22px">آخر النشاطات</h3><div class="tw"><table class="tbl">${d.log.map(l => `<tr><td>${new Date(l.t).toLocaleString('ar-EG')}</td><td>${esc(l.who)}</td><td>${esc(l.what)}</td></tr>`).join('') || '<tr><td>لا شيء بعد</td></tr>'}</table></div>`;
+  const d = await api('/admin/stats'), t = d.totals; let rng = 14, more = false;
+  const sum = (arr, k) => arr.reduce((a, x) => a + (x[k] || 0), 0);
+  const draw = () => {
+    const days = d.days.slice(-rng), prev = d.days.slice(-rng * 2, -rng), mx = Math.max(1, ...days.map(x => x.views || 0));
+    const cv = sum(days, 'views'), pv = sum(prev, 'views'), dl = prev.length ? cv - pv : null;
+    const delta = dl === null ? '' : `<em class="dl ${dl >= 0 ? 'up' : 'dn'}">${dl >= 0 ? '+' : ''}${dl} عن الفترة السابقة</em>`;
+    const tm = Math.max(1, ...d.top.map(i => i.views || 0)), cm = Math.max(1, ...d.byCat.map(c => c.views || 0));
+    const wd = x => new Date(x.d).toLocaleDateString('ar-EG', { weekday: 'short' });
+    const alerts = [t.pending ? `<a class="al" href="#/admin/comments"><b>${t.pending}</b> تعليق ينتظر المراجعة</a>` : '', t.items - t.published > 0 ? `<a class="al" href="#/admin/content"><b>${t.items - t.published}</b> عنصر غير منشور</a>` : ''].join('');
+    el.innerHTML = `${alerts ? `<div class="als">${alerts}</div>` : ''}<div class="kp"><div><b>${t.published}/${t.items}</b><span>منشور / الكل</span></div><div><b>${fmt(t.views)}</b><span>مشاهدات</span></div><div><b>${t.users}</b><span>مستخدمون</span></div><div><b>${t.likes}</b><span>إعجابات</span></div><div><b>${t.pending}</b><span>تعليقات للمراجعة</span></div><div><b>${sum(days, 'autoreplies')}</b><span>ردود تلقائية (${rng} يوماً)</span></div></div>
+    <div class="ovh"><h3>المشاهدات آخر ${rng} يوماً: <b>${fmt(cv)}</b> ${delta}</h3><div class="bar strip" id="rg" role="group" aria-label="المدة">${[7, 14].map(n => `<span class="chip${rng === n ? ' on' : ''}" role="button" tabindex="0" aria-pressed="${rng === n}" data-r="${n}">${n} أيام</span>`).join('')}</div></div>
+    <div class="chart2" role="img" aria-label="رسم المشاهدات">${days.map(x => `<div class="cb" title="${x.d}: ${x.views || 0}"><u>${x.views || 0}</u><i style="height:${Math.max(3, (x.views || 0) / mx * 100)}%"></i><small>${wd(x)}</small></div>`).join('')}</div>
+    <div class="row" style="margin-top:26px"><div><h3>الأكثر مشاهدة</h3><ol class="rk">${d.top.map(i => `<li><span>${esc(i.title)}</span><i><u style="width:${Math.round((i.views || 0) / tm * 100)}%"></u></i><b>${fmt(i.views || 0)}</b></li>`).join('') || '<li>لا شيء بعد</li>'}</ol></div>
+    <div><h3>حسب التصنيف</h3><ol class="rk">${d.byCat.map(c => `<li><span>${esc(c.name)} <small>(${c.n})</small></span><i><u style="width:${Math.round((c.views || 0) / cm * 100)}%"></u></i><b>${fmt(c.views || 0)}</b></li>`).join('')}</ol></div></div>
+    <h3 style="margin-top:26px">آخر النشاطات</h3><ul class="tlg">${(more ? d.log : d.log.slice(0, 6)).map(l => `<li><time>${new Date(l.t).toLocaleString('ar-EG')}</time><b>${esc(l.who)}</b> ${esc(l.what)}</li>`).join('') || '<li>لا شيء بعد</li>'}</ul>${d.log.length > 6 ? `<button class="btn w sm" id="lm">${more ? 'أقل' : 'عرض الكل (' + d.log.length + ')'}</button>` : ''}`;
+    const rg = $('#rg'); rg.onclick = e => { const c = e.target.closest('[data-r]'); if (c) { rng = Number(c.dataset.r); draw(); } }; rg.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); } };
+    const lm = $('#lm'); if (lm) lm.onclick = () => { more = !more; draw(); };
+  };
+  draw();
 }
 async function aContent(el, editing) {
   const items = await api('/admin/items'), cats = S.home.cats;
