@@ -48,7 +48,7 @@ function pExplore(cat) {
   shell(`<section class="s"><div class="wrap"><div class="h2">استكشف</div>
   <div class="bar"><input id="q" type="search" placeholder="ابحث عن معلومة..." aria-label="بحث" style="max-width:320px"></div>
   <div class="bar" id="fc" role="group" aria-label="التصنيف"></div><div class="bar" id="ft" role="group" aria-label="النوع"></div>
-  <div class="bar xbar"><small id="xn" aria-live="polite"></small><select id="xs" aria-label="الترتيب">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><button class="btn sm" id="xc" type="button" hidden>مسح الفلاتر</button></div>
+  <div class="bar xbar"><small id="xn" aria-live="polite"></small><select id="xs" aria-label="الترتيب">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><button class="btn sm xt" id="xt" type="button" aria-expanded="false"></button><button class="btn sm" id="xc" type="button" hidden>مسح الفلاتر</button></div>
   <div class="grid" id="res"></div></div></section>`, '/explore');
   const chip = (on, a, v, t, n, col) => `<span class="chip ${on ? 'on' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-${a}="${v}"${col ? ` style="--cc:${col}"` : ''}>${t}${n != null ? `<em>${n}</em>` : ''}</span>`;
   const draw = () => {
@@ -59,6 +59,7 @@ function pExplore(cat) {
     const by = { new: (a, b) => (b.publishAt || 0) - (a.publishAt || 0), old: (a, b) => (a.publishAt || 0) - (b.publishAt || 0), views: (a, b) => (b.views || 0) - (a.views || 0), short: (a, b) => (a.minutes || 0) - (b.minutes || 0) };
     r.sort(by[st.sort]);
     const dirty = st.cat || st.type || q;
+    $('#xt').textContent = 'النوع: ' + (st.type ? TYPES[st.type] : 'الكل') + ' ▾';
     $('#xn').textContent = r.length ? `${fmt(r.length)} نتيجة` : '';
     $('#xc').hidden = !dirty;
     $('#res').innerHTML = r.length ? r.map(card).join('') : `<div style="grid-column:1/-1">${emptyBox('لا نتائج. جرّب كلمة أخرى أو امسح الفلاتر.')}</div>`;
@@ -66,6 +67,7 @@ function pExplore(cat) {
   };
   draw(); $('#fc').scrollLeft = 0;
   $('#q').oninput = e => { st.q = e.target.value; draw(); };
+  $('#xt').onclick = () => { const o = $('#ft').classList.toggle('open'); $('#xt').setAttribute('aria-expanded', o); };
   $('#xs').onchange = e => { st.sort = e.target.value; draw(); };
   $('#xc').onclick = () => { st.cat = ''; st.type = ''; st.q = ''; $('#q').value = ''; draw(); };
   const pick = e => { const t = e.target.closest('.chip'); if (!t) return; if (t.dataset.c !== undefined) st.cat = t.dataset.c; else if (t.dataset.t !== undefined) st.type = t.dataset.t; else return; draw(); const on = document.querySelector('#' + (t.dataset.c !== undefined ? 'fc' : 'ft') + ' .on'); if (on) on.focus({ preventScroll: true }); };
@@ -134,9 +136,9 @@ function pSuggest() {
   let cat = '';
   shell(`<div class="wrap"><div class="box auth sg"><div class="h2">اقترح موضوعاً<small>ما الذي تتمنى أن نشرحه؟ نقرأ كل اقتراح.</small></div>
   <div class="say" style="margin:12px 0">${mascot()}<span>اكتب سؤالاً واحداً واضحاً، وسأحوّله لحلقة.</span></div>
-  <label class="f">التصنيف (اختياري)</label><div class="bar" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
+  <label class="f">التصنيف (اختياري)</label><div class="bar strip" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
   <label class="f" for="st">اقتراحك</label><textarea id="st" maxlength="500" placeholder="مثال: ${ex[0]}"></textarea>
-  <div class="bar" style="justify-content:space-between"><small id="sn" dir="ltr">0 / 500</small><span class="bar" id="se2">${ex.map(e => `<span class="chip" role="button" tabindex="0" data-e="${esc(e)}">${esc(e)}</span>`).join('')}</span></div>
+  <div class="bar" style="justify-content:space-between"><small id="sn" dir="ltr">0 / 500</small><span class="bar strip" id="se2">${ex.map(e => `<span class="chip" role="button" tabindex="0" data-e="${esc(e)}">${esc(e)}</span>`).join('')}</span></div>
   <p style="margin-top:12px"><button class="btn red" id="sb">إرسال</button></p><div class="err" id="se" role="alert"></div></div></div>`, '/suggest');
   const t = $('#st'), cnt = () => { $('#sn').textContent = t.value.length + ' / 500'; };
   t.oninput = () => { cnt(); $('#se').textContent = ''; };

@@ -557,3 +557,13 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 #fc,#ft,#sc{gap:10px}
 @media(max-width:700px){#fc,#ft{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 8px;margin-inline:-2px;scrollbar-width:none}#fc::-webkit-scrollbar,#ft::-webkit-scrollbar{display:none}#fc .chip,#ft .chip{scroll-snap-align:center;flex:none}}
 .chip.z[role=button]:not(.on){opacity:.55}
+/* v54 compact chips on phones */
+.xt{display:none}
+@media(max-width:700px){
+.xt{display:inline-flex}
+#ft{display:none}#ft.open{display:flex}
+.strip{flex-wrap:nowrap!important;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 8px;scrollbar-width:none}.strip::-webkit-scrollbar{display:none}.strip .chip{flex:none;scroll-snap-align:center}
+.sg #se2{display:flex}.sg #se2 .chip{min-height:34px;font-size:14px}
+.xbar{flex-wrap:wrap}
+}
+@media(max-width:700px){.bar:has(>.chip[role=button]):not(.strip):not(#fc):not(#ft){flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 8px;scrollbar-width:none}.bar:has(>.chip[role=button])::-webkit-scrollbar{display:none}.bar:has(>.chip[role=button]) .chip{flex:none}}
