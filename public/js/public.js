@@ -155,7 +155,7 @@ function pQuiz() {
       return shell(`<div class="wrap"><div class="box quiz" style="text-align:center;margin:30px auto;max-width:560px">${mascot()}<span class="chip" style="background:${P.color};color:#fff">شخصيتك</span><h1 style="margin:10px 0">${P.name}</h1><p>${P.line}</p><p style="margin-top:18px"><a class="btn red" href="#/">شوف صفحتك الرئيسية ←</a></p></div></div>`, '/quiz');
     }
     const [q, ans] = QUIZ[k];
-    shell(`<div class="wrap"><div class="box quiz" style="margin:30px auto;max-width:560px"><small>سؤال ${k + 1} من ${QUIZ.length}</small><div class="bar" style="height:8px;background:#fff;border:2px solid var(--ink);border-radius:8px;margin:6px 0 16px;overflow:hidden"><i style="display:block;height:100%;width:${(k / QUIZ.length) * 100}%;background:var(--red)"></i></div><h1 style="font-size:24px;margin-bottom:14px">${q}</h1>
+    shell(`<div class="wrap"><div class="box quiz" style="margin:30px auto;max-width:560px"><small>سؤال ${k + 1} من ${QUIZ.length}</small><div class="bar" style="height:8px;background:#fff;border:1.5px solid var(--line);border-radius:8px;margin:6px 0 16px;overflow:hidden"><i style="display:block;height:100%;width:${(k / QUIZ.length) * 100}%;background:var(--red)"></i></div><h1 style="font-size:24px;margin-bottom:14px">${q}</h1>
     <div class="qa">${ans.map(([t, l]) => `<button class="btn w" data-t="${t}" style="width:100%;margin-bottom:10px;text-align:start;justify-content:flex-start">${l}</button>`).join('')}</div></div></div>`, '/quiz');
     document.querySelector('.qa').onclick = e => { const t = e.target.closest('[data-t]'); if (!t) return; sc[t.dataset.t]++; k++; draw(); };
   };
