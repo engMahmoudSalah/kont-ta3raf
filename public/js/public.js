@@ -12,7 +12,7 @@ function pHome() {
   const cols = ['#F0B400', '#EF642D', '#9DC4D5', '#FADA80', '#2E6FBE', '#fff'];
   shell(`<section class="scene" id="scene" style="--px:0;--py:0;--sy:0"><div class="sk"></div><div class="grain"></div>
   <div class="pl pl-q" style="--d:.15" aria-hidden="true">؟</div>
-  <div class="pl pl-o" style="--d:.6">${cats.slice(0, 11).map((c, n) => `<a class="orb o${n}" href="#/explore?cat=${c.id}" style="inset-inline-start:${(pos[n][0]*.8).toFixed(0)}%;top:${pos[n][1]}%;--c:${cols[n % 6]};--dl:${(n * -.7).toFixed(1)}s"><span>${cicon(c.id, 22)}${esc(c.name)}</span></a>`).join('')}</div>
+  <div class="pl pl-o" style="--d:.6">${cats.slice(0, 11).map((c, n) => `<a class="orb o${n}" href="#/explore?cat=${c.id}" style="inset-inline-start:min(${(pos[n][0]*.8).toFixed(0)}%,calc(100% - 136px));top:${pos[n][1]}%;--c:${cols[n % 6]};--dl:${(n * -.7).toFixed(1)}s"><span>${cicon(c.id, 22)}${esc(c.name)}</span></a>`).join('')}</div>
   <div class="pl pl-t" style="--d:.3"><h1>${esc(s.heroTitle).split(" ").map((w, n) => `<span style="--i:${n}">${w}</span>`).join(" ")}</h1></div>
   <div class="pl pl-m" style="--d:.5"><div class="hero-art">${mascot('big')}</div></div>
   <div class="pl pl-f" style="--d:1.1" aria-hidden="true">${cloud('fc1')}${cloud('fc2')}${cloud('fc3')}</div>
