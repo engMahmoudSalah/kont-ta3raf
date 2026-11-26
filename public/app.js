@@ -27,6 +27,15 @@ function art() {
   <svg class="bang" viewBox="0 0 40 100" aria-hidden="true"><rect x="5" y="3" width="30" height="58" rx="10" fill="#EF642D" stroke="#181818" stroke-width="4"/><circle cx="20" cy="82" r="14" fill="#EF642D" stroke="#181818" stroke-width="4"/></svg></div>`;
 }
 const emptyBox = t => `<div class="empty">${mascot()}${t}</div>`;
+const ICONS = {
+  science: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M8 15h8"/>',
+  nature: '<path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15"/><path d="M5 19c3-4 6-6 9-8"/>',
+  history: '<path d="M3 20h18M12 4 4 20M12 4l8 16M8 13h8"/>',
+  tech: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  space: '<circle cx="12" cy="12" r="5"/><path d="M2 15c4 3 14-1 20-6M4 9C8 6 17 8 21 15" opacity=".0"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)"/>',
+  body: '<path d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z"/>',
+};
+const cicon = (id, sz = 28) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="#181818" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="8"/>'}</svg>`;
 function card(i) {
   const c = catOf(i.cat);
   return `<a class="card" href="#/item/${esc(i.id)}">${i.cover ? `<div class="th cov"><em>${esc(c.name)}</em><img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy"></div>` : `<div class="th" style="background:${c.color}"><em>${esc(c.name)}</em>${mascot()}</div>`}
@@ -64,9 +73,9 @@ function pHome() {
   shell(`<section class="hero"><div class="wrap"><div><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
   <div class="say" style="max-width:420px;margin-bottom:18px">${mascot()}<span>أنا ماسكوت القناة. أسأل "كنت تعرف؟" وأجاوب بسرعة.</span></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
-  <div class="marq"><div>${cats.map(c => `${c.icon} ${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${c.icon} ${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
+  <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>ست تصنيفات، وكل واحد فيه ما يستحق أن تعرفه</small></div>
-  <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}33">${c.icon}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
+  <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
   ${feat.length ? `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مختارات<small>ابدأ من هنا</small></div><div class="feat" style="margin-top:22px">${feat.map(card).join('')}</div></div></section>` : ''}
   <section class="s" style="padding-top:0"><div class="wrap"><div class="h2">الأحدث</div><div class="grid">${latest.map(card).join('')}</div>
   <p style="text-align:center;margin-top:24px"><a class="btn" href="#/explore">كل المحتوى</a></p></div></section>
@@ -88,7 +97,7 @@ function pExplore(cat) {
   <div class="bar"><input id="q" placeholder="ابحث عن معلومة..." style="max-width:320px"></div>
   <div class="bar" id="fc"></div><div class="bar" id="ft"></div><div class="grid" id="res"></div></div></section>`, '/explore');
   const draw = () => {
-    $('#fc').innerHTML = `<span class="chip ${!st.cat ? 'on' : ''}" data-c="">الكل</span>` + cats.map(c => `<span class="chip ${st.cat === c.id ? 'on' : ''}" data-c="${c.id}">${c.icon} ${esc(c.name)}</span>`).join('');
+    $('#fc').innerHTML = `<span class="chip ${!st.cat ? 'on' : ''}" data-c="">الكل</span>` + cats.map(c => `<span class="chip ${st.cat === c.id ? 'on' : ''}" data-c="${c.id}">${esc(c.name)}</span>`).join('');
     $('#ft').innerHTML = `<span class="chip ${!st.type ? 'on' : ''}" data-t="">كل الأنواع</span>` + Object.entries(TYPES).map(([k, v]) => `<span class="chip ${st.type === k ? 'on' : ''}" data-t="${k}">${v}</span>`).join('');
     const q = st.q.trim().toLowerCase();
     const r = items.filter(i => (!st.cat || i.cat === st.cat) && (!st.type || i.type === st.type) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
@@ -104,7 +113,7 @@ async function pItem(id) {
   const i = d.item, c = catOf(i.cat), u = S.user;
   const saved = u && u.bookmarks.includes(i.id), done = u && u.done.includes(i.id);
   const cm = list => list.length ? list.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}${x.status !== 'ok' ? ' · ' + (x.status === 'pending' ? 'بانتظار المراجعة' : 'مخفي') : ''}</small><div>${esc(x.text)}</div>${x.reply ? `<div class="rp"><b>${x.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(x.reply.text)}</div>` : ''}</div>`).join('') : emptyBox('كن أول من يعلّق');
-  shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}33">${c.icon} ${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>${i.ep ? ` <span class="chip" style="background:var(--yellow)">الحلقة ${i.ep}</span>` : ''}
+  shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}">${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>${i.ep ? ` <span class="chip" style="background:var(--yellow)">الحلقة ${i.ep}</span>` : ''}
   <h1>${esc(i.title)}</h1><div class="meta"><span>${i.minutes} دقائق</span><span>👁 ${fmt(i.views)}</span><span id="lk">❤ ${i.likes}</span><span>${date(i.created)}</span></div>
   ${i.cover && !i.youtube ? `<div class="pcover"><img src="${esc(i.cover)}" alt="${esc(i.title)}"></div>` : ''}${i.youtube ? `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.youtube)}" allowfullscreen loading="lazy" title="${esc(i.title)}"></iframe></div>` : ''}
   <p style="font-weight:900;font-size:20px;margin-top:16px">${esc(i.summary)}</p>${md(i.body)}${i.short ? `<h2>النسخة القصيرة (Short)</h2><div class="vid" style="aspect-ratio:9/16;max-width:320px"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.short)}" allowfullscreen loading="lazy" title="Short"></iframe></div>` : ''}${i.credit ? `<p style="font-size:14px;color:var(--grey)">${esc(i.credit)}</p>` : ''}${(d.prev || d.next) ? `<div class="bar" style="justify-content:space-between">${d.next ? `<a class="btn sm w" href="#/item/${esc(d.next.id)}">الحلقة ${d.next.ep} ←</a>` : '<span></span>'}${d.prev ? `<a class="btn sm w" href="#/item/${esc(d.prev.id)}">→ الحلقة ${d.prev.ep}</a>` : ''}</div>` : ''}
@@ -118,7 +127,7 @@ async function pItem(id) {
   $('#b-like').onclick = async () => { try { const r = await api(`/items/${i.id}/like`, 'POST'); $('#lk').textContent = '❤ ' + r.likes; } catch (e) { toast(e.message); } };
   $('#b-save').onclick = async () => { if (need()) return; const r = await api('/me/bookmark', 'POST', { id: i.id }); S.user.bookmarks = r.bookmarks; $('#b-save').textContent = r.bookmarks.includes(i.id) ? '★ محفوظ' : '☆ احفظ'; };
   $('#b-done').onclick = async () => { if (need()) return; const r = await api('/me/done', 'POST', { id: i.id }); S.user.done = r.done; $('#b-done').textContent = r.done.includes(i.id) ? '✔ تمت القراءة' : 'علّمه كمقروء'; };
-  $('#b-share').onclick = async () => { try { if (navigator.share) await navigator.share({ title: i.title, url: location.href }); else { await navigator.clipboard.writeText(location.href); toast('تم نسخ الرابط'); } } catch { } };
+  $('#b-share').onclick = async () => { try { if (navigator.share) await navigator.share({ title: i.title, url: location.origin + '/e/' + i.id }); else { await navigator.clipboard.writeText(location.origin + '/e/' + i.id); toast('تم نسخ الرابط'); } } catch { } };
   if ($('#b-cm')) $('#b-cm').onclick = async () => { try { await api(`/items/${i.id}/comments`, 'POST', { text: $('#ct').value }); pItem(i.id); } catch (e) { $('#ce').textContent = e.message; } };
 }
 function pAuth(mode) {

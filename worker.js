@@ -65,6 +65,20 @@ async function saveItem(env, u, body) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url); const p = url.pathname; const m = req.method;
+    const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    if (p === '/sitemap.xml') {
+      await init(env); const items = (await get(env, 'items', [])).filter(i => live(i));
+      const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${url.origin}/</loc></url><url><loc>${url.origin}/#/episodes</loc></url>${items.map(i => `<url><loc>${url.origin}/e/${escH(i.id)}</loc></url>`).join('')}</urlset>`;
+      return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8' } });
+    }
+    let em;
+    if ((em = p.match(/^\/e\/([\w-]+)$/))) {
+      await init(env); const it = (await get(env, 'items', [])).find(i => i.id === em[1] && live(i));
+      if (!it) return Response.redirect(url.origin + '/', 302);
+      const img = it.cover ? url.origin + it.cover : url.origin + '/og.jpg'; const dest = `${url.origin}/#/item/${it.id}`;
+      const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escH(it.title)} | كنت تعرف!</title><meta name="description" content="${escH(it.summary)}"><meta property="og:type" content="article"><meta property="og:title" content="${escH(it.title)}"><meta property="og:description" content="${escH(it.summary)}"><meta property="og:image" content="${escH(img)}"><meta property="og:url" content="${url.origin}/e/${escH(it.id)}"><meta name="twitter:card" content="summary_large_image"><meta http-equiv="refresh" content="0;url=${escH(dest)}"></head><body><a href="${escH(dest)}">${escH(it.title)}</a><script>location.replace(${JSON.stringify(dest)})</script></body></html>`;
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+    }
     if (!p.startsWith('/api/')) return env.ASSETS.fetch(req);
     await init(env);
     const ip = req.headers.get('cf-connecting-ip') || 'x';

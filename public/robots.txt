@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://kont-ta3raf.mahmodsalah.workers.dev/sitemap.xml
