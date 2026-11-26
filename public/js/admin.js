@@ -16,8 +16,8 @@ async function aDash(el) {
   const d = await api('/admin/stats'), t = d.totals, mx = Math.max(1, ...d.days.map(x => x.views || 0));
   el.innerHTML = `<div class="kp"><div><b>${t.published}/${t.items}</b><span>منشور / الكل</span></div><div><b>${fmt(t.views)}</b><span>مشاهدات</span></div><div><b>${t.users}</b><span>مستخدمون</span></div><div><b>${t.likes}</b><span>إعجابات</span></div><div><b>${t.pending}</b><span>تعليقات للمراجعة</span></div><div><b>${d.days.reduce((a, x) => a + (x.autoreplies || 0), 0)}</b><span>ردود تلقائية (14 يوماً)</span></div></div>
   <h3 style="margin:22px 0 8px">المشاهدات آخر 14 يوماً</h3><div class="chart">${d.days.map(x => `<i title="${x.d}: ${x.views || 0}" style="height:${Math.max(3, (x.views || 0) / mx * 100)}%"></i>`).join('')}</div>
-  <div class="row" style="margin-top:22px"><div><h3>الأكثر مشاهدة</h3><div class="tw"><table class="tbl"><tr><th>العنوان</th><th>👁</th></tr>${d.top.map(i => `<tr><td>${esc(i.title)}</td><td>${i.views}</td></tr>`).join('')}</table></div></div>
-  <div><h3>حسب التصنيف</h3><div class="tw"><table class="tbl"><tr><th>التصنيف</th><th>عناصر</th><th>👁</th></tr>${d.byCat.map(c => `<tr><td>${esc(c.name)}</td><td>${c.n}</td><td>${c.views}</td></tr>`).join('')}</table></div></div></div>
+  <div class="row" style="margin-top:22px"><div><h3>الأكثر مشاهدة</h3><div class="tw"><table class="tbl"><tr><th>العنوان</th><th>${GI.eye}</th></tr>${d.top.map(i => `<tr><td>${esc(i.title)}</td><td>${i.views}</td></tr>`).join('')}</table></div></div>
+  <div><h3>حسب التصنيف</h3><div class="tw"><table class="tbl"><tr><th>التصنيف</th><th>عناصر</th><th>${GI.eye}</th></tr>${d.byCat.map(c => `<tr><td>${esc(c.name)}</td><td>${c.n}</td><td>${c.views}</td></tr>`).join('')}</table></div></div></div>
   <h3 style="margin-top:22px">آخر النشاطات</h3><div class="tw"><table class="tbl">${d.log.map(l => `<tr><td>${new Date(l.t).toLocaleString('ar-EG')}</td><td>${esc(l.who)}</td><td>${esc(l.what)}</td></tr>`).join('') || '<tr><td>لا شيء بعد</td></tr>'}</table></div>`;
 }
 async function aContent(el, editing) {
@@ -45,7 +45,7 @@ async function aContent(el, editing) {
     $('#cf').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const b = Object.fromEntries(f); b.featured = f.has('featured'); b.publishAt = b.publishAt ? Date.parse(b.publishAt + ':00+02:00') : 0; b.tags = String(b.tags).split(/[,،]/).map(x => x.trim()).filter(Boolean); if (i.id) b.id = i.id; try { await api('/admin/items', 'POST', b); S.home = await api('/home'); toast('تم الحفظ'); aContent(el); } catch (x) { $('#cer').textContent = x.message; } };
     return;
   }
-  el.innerHTML = `<p><button class="btn sm" id="nw">+ محتوى جديد</button></p><div class="tw" style="margin-top:12px"><table class="tbl"><tr><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>👁</th><th></th></tr>
+  el.innerHTML = `<p><button class="btn sm" id="nw">+ محتوى جديد</button></p><div class="tw" style="margin-top:12px"><table class="tbl"><tr><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>${GI.eye}</th><th></th></tr>
   ${items.map(i => `<tr><td>${esc(i.title)}</td><td>${esc(catOf(i.cat).name)}</td><td><span class="pill ${i.status === 'published' ? 'g' : 'y'}">${i.status === 'published' ? 'منشور' : 'مسودة'}</span></td><td>${i.views}</td><td><button class="btn sm w" data-e="${esc(i.id)}">تعديل</button> ${S.user.role === 'admin' ? `<button class="btn sm danger" data-d="${esc(i.id)}">حذف</button>` : ''}</td></tr>`).join('')}</table></div>`;
   $('#nw').onclick = () => aContent(el, '');
   el.onclick = async e => {

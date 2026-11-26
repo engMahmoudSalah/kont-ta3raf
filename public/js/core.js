@@ -11,7 +11,9 @@ async function api(path, method = 'GET', body) {
   return d;
 }
 const TYPES = { video: 'فيديو', article: 'مقال', guide: 'دليل', checklist: 'قائمة' };
-const TICON = { video: '▶', article: '📰', guide: '🧭', checklist: '✅' };
+const gi = d => `<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const GI = { eye: gi('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'), heart: gi('<path d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z"/>'), check: gi('<path d="M4 12l5 5L20 6"/>') };
+const TICON = { video: gi('<path d="M7 4l13 8-13 8z"/>'), article: gi('<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/>'), guide: gi('<circle cx="12" cy="12" r="9"/><path d="M15.500 8.500l-2 5-5 2 2-5z"/>'), checklist: gi('<path d="M4 6l2 2 3-3M4 14l2 2 3-3M12 7h8M12 15h8"/>') };
 const fmt = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
 const catOf = id => (S.home.cats.find(c => c.id === id) || { name: '', color: '#1B1B1F', icon: '✦' });
 const date = t => new Date(t).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });

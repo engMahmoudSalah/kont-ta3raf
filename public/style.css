@@ -245,3 +245,4 @@ article.post{padding-inline:2px}
 @keyframes hop{0%{transform:scale(1)}35%{transform:scale(1.08) rotate(-4deg)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.hq b.pop,.hero-art .big.hop{animation:none}}
 .quiz .mascot{width:96px;height:96px;display:block;margin:0 auto 10px}.quiz button.btn{white-space:normal}
+.gi{width:1.05em;height:1.05em;vertical-align:-.15em;display:inline-block}
