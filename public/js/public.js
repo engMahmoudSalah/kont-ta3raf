@@ -115,10 +115,14 @@ async function pAccount() {
   const pct = items.length ? Math.round(done.length / items.length * 100) : 0;
   shell(`<div class="wrap"><section class="s"><div class="h2">أهلاً ${esc(u.name)}<small>${esc(u.email)} · خطة ${u.plan === 'plus' ? 'بلس' : 'مجانية'}</small></div>
   <div class="kp" style="margin:20px 0"><div><b>${saved.length}</b><span>محفوظ</span></div><div><b>${done.length}</b><span>مقروء</span></div><div><b>${pct}%</b><span>تقدّمك</span></div></div>
+  <div class="acx"><div class="box">${meter()}<p style="margin-top:8px"><small>سلسلة أيام اللعب: <b>${(JSON.parse(localStorage.kt_play || '{}').streak) || 0}</b></small></p></div>
+  <div class="box"><b>شخصيتك</b><p style="margin:8px 0">${persona() && PERSONAS[persona()] ? `<span class="chip" style="background:${PERSONAS[persona()].color};color:#fff">${esc(PERSONAS[persona()].name)}</span> ${esc(PERSONAS[persona()].line)}` : 'لم تحدد شخصيتك بعد. اعرف نوع فضولك ونرتّب لك الموقع.'}</p><a class="btn sm" href="#/quiz">${persona() ? 'أعد الاختبار' : 'ابدأ الاختبار'}</a></div>
+  <div class="box"><b>تقدّمك حسب التصنيف</b>${S.home.cats.map(c => { const all = items.filter(i => i.cat === c.id), dn = all.filter(i => u.done.includes(i.id)); return all.length ? `<div class="pg"><span>${esc(c.name)}</span><i><u style="width:${Math.round(dn.length / all.length * 100)}%;background:${c.color}"></u></i><small>${dn.length}/${all.length}</small></div>` : ''; }).join('')}</div></div>
+  ${(() => { const nx = items.filter(i => u.bookmarks.includes(i.id) && !u.done.includes(i.id)).slice(0, 3); return nx.length ? `<div class="h2" style="font-size:24px;margin-top:26px">كمّل من حيث وقفت</div><div class="grid">${nx.map(card).join('')}</div>` : ''; })()}
   <div class="h2" style="font-size:24px">المفضلة</div><div class="grid">${saved.map(card).join('') || `<div style="grid-column:1/-1">${emptyBox('لم تحفظ شيئاً بعد')}</div>`}</div>
-  <div class="box" style="margin-top:30px;max-width:460px"><b>الملف الشخصي</b><label class="f">الاسم</label><input id="pn" value="${esc(u.name)}"><label class="f">كلمة مرور جديدة (اختياري)</label><input id="pp" type="password" autocomplete="new-password">
+  <div class="box" style="margin-top:30px;max-width:460px"><b>الملف الشخصي</b><label class="f">الاسم</label><input id="pn" value="${esc(u.name)}"><label class="f">كلمة مرور جديدة (اختياري، 10 أحرف على الأقل)</label><input id="pp" type="password" autocomplete="new-password" minlength="10">
   <p style="margin-top:12px"><button class="btn sm" id="ps">حفظ</button> <button class="btn w sm" id="lo">خروج</button></p></div></section></div>`, '/account');
-  $('#ps').onclick = async () => { try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: $('#pn').value, password: $('#pp').value }) }; toast('تم الحفظ'); } catch (e) { toast(e.message); } };
+  $('#ps').onclick = async () => { if ($('#pp').value && $('#pp').value.length < 10) return toast('كلمة المرور 10 أحرف على الأقل'); try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: $('#pn').value, password: $('#pp').value }) }; toast('تم الحفظ'); $('#pp').value = ''; } catch (e) { toast(e.message); } };
   $('#lo').onclick = async () => { await api('/me/logout', 'POST').catch(() => { }); S.token = ''; S.user = null; localStorage.removeItem('kt_token'); location.hash = '#/'; };
 }
 function pPlans() {
