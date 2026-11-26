@@ -387,3 +387,17 @@ header.top.ov{margin-bottom:-68px}
 nav.m .rt2 .mchip{background:var(--yellow);color:var(--ink)}
 nav.m .rt2 a.btn{background:var(--cream);color:var(--ink)}
 @media(max-width:900px){header.top.ov{margin-bottom:-62px}}
+/* v24: light hero */
+.scene{color:var(--ink);background:#cfe6ee}
+.scene .sk{background:radial-gradient(55% 45% at 50% 52%,rgba(250,218,128,.95) 0,rgba(250,218,128,0) 70%),radial-gradient(90% 55% at 50% 105%,#F7B955 0,rgba(247,185,85,0) 65%),linear-gradient(#A9D3E4 0%,#D4EAF0 50%,#F8EBD0 100%)}
+.scene .grain{opacity:.22;mix-blend-mode:multiply;background-image:radial-gradient(rgba(70,60,80,.35) 1px,transparent 1.4px)}
+.pl-q{-webkit-text-stroke:3px rgba(70,60,80,.16)}
+.pl-t h1{color:var(--ink);text-shadow:4px 4px 0 var(--sand),0 0 30px rgba(255,255,255,.6)}
+.pl-m .hero-art:before{background:radial-gradient(closest-side,rgba(239,100,45,.28),transparent)}
+.sc-bot{color:var(--ink)}
+.sc-bot .sub{color:#3b3545;font-weight:600}
+.sc-bot .hq{border-color:var(--line)}
+header.top.ov:not(.solid) .logo,header.top.ov:not(.solid) .rt2>a:not(.btn):not(.mchip){color:var(--ink)}
+nav.m .rt2 a.btn{background:var(--ink);color:#fff}
+header.top.ov:not(.solid) .logo .mascot{filter:drop-shadow(2px 2px 0 var(--red))}
+.pl-f svg{opacity:1}
