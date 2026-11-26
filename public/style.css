@@ -1,4 +1,4 @@
-:root{--cream:#F5EEE3;--line:#6E6577;--lsh:rgba(70,60,80,.2);--ink:#181818;--red:#EF642D;--blue:#2E6FBE;--sky:#9DC4D5;--yellow:#F0B400;--sand:#FADA80;--plum:#463C50;--white:#fff;--grey:#6b6b73;--b:1.5px solid var(--line);--sh:3px 3px 0 var(--lsh)}
+:root{--cream:#F5EEE3;--line:#181818;--lsh:rgba(70,60,80,.2);--ink:#181818;--red:#EF642D;--blue:#2E6FBE;--sky:#9DC4D5;--yellow:#F0B400;--sand:#FADA80;--plum:#463C50;--white:#fff;--grey:#6b6b73;--b:1.5px solid var(--line);--sh:3px 3px 0 var(--lsh)}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{font-family:Cairo,system-ui,Tahoma,sans-serif;background:var(--cream);color:var(--ink);line-height:1.7;font-weight:500;overflow-x:hidden}
@@ -401,3 +401,21 @@ header.top.ov:not(.solid) .logo,header.top.ov:not(.solid) .rt2>a:not(.btn):not(.
 nav.m .rt2 a.btn{background:var(--ink);color:#fff}
 header.top.ov:not(.solid) .logo .mascot{filter:drop-shadow(2px 2px 0 var(--red))}
 .pl-f svg{opacity:1}
+/* v25: flat full-width nav, transparent at top, docks on scroll */
+header.top{top:0;margin:0;padding:0;background:rgba(251,251,249,.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(110,101,119,.35);transition:transform .35s cubic-bezier(.2,.7,.2,1),background .3s,border-color .3s}
+header.top .wrap{max-width:1160px;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;height:60px;padding:0 18px}
+header.top.ov{margin-bottom:-61px}
+header.top.ov:not(.solid){background:transparent;backdrop-filter:none;border-bottom-color:transparent}
+header.top.hide{transform:translateY(-100%)}
+.logo{transition:transform .3s;transform-origin:right center}
+header.top.solid .logo{transform:scale(.88)}
+nav.m .lk,header.top.ov:not(.solid) nav.m .lk{background:transparent;border:0;padding:0;gap:6px}
+nav.m .lk a{border-radius:0;padding:4px 12px;min-height:34px;position:relative;background:none}
+nav.m .lk a.on{background:none;color:var(--ink)}
+nav.m .lk a:after{content:"";position:absolute;inset-inline:12px;bottom:0;height:3px;border-radius:3px;background:var(--red);transform:scaleX(0);transition:transform .25s}
+nav.m .lk a.on:after,nav.m .lk a:hover:after{transform:scaleX(1)}
+nav.m .lk a:hover:not(.on){background:none}
+.scene{margin:0;border:0;border-radius:0;box-shadow:none}
+@media(max-width:900px){nav.m{top:60px;inset-inline:8px;border-radius:16px}nav.m .lk{display:grid;grid-template-columns:1fr 1fr}nav.m .lk a{text-align:center}header.top.ov{margin-bottom:-61px}}
+@media(prefers-reduced-motion:reduce){header.top,.logo{transition:none}header.top.hide{transform:none}}
+header.top{border-bottom-color:var(--ink)}header.top.ov:not(.solid){border-bottom-color:transparent}

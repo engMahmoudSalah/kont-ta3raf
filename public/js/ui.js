@@ -58,3 +58,13 @@ function shell(inner, route, o = {}) {
   if (!o.keepScroll) scrollTo(0, 0);
 }
 
+
+// nav scroll behaviour: transparent on hero top, docks solid after 30px, hides on scroll down, returns on scroll up
+let _ly = 0;
+addEventListener('scroll', () => {
+  const h = document.querySelector('header.top'); if (!h) return;
+  const y = scrollY, open = document.querySelector('nav.m.open');
+  h.classList.toggle('solid', y > 30);
+  h.classList.toggle('hide', !open && y > _ly + 4 && y > 400); if (y < _ly - 4) h.classList.remove('hide');
+  _ly = y;
+}, { passive: true });
