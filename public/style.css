@@ -371,3 +371,19 @@ nav.m .lk a:hover:not(.on){background:var(--sand)}
 .pl-m{padding-top:20%;padding-bottom:24%}
 @media(max-width:700px){.scene{height:auto;max-height:none}.sc-bot{padding-bottom:24px}}
 @media(max-width:700px){.o3{display:none}.sc-bot{margin-top:74vh}}
+
+/* v22: headline word reveal, nav over hero */
+.pl-t h1{animation:none}
+.pl-t h1 span{display:inline-block;animation:rise .7s both;animation-delay:calc(var(--i)*.14s + .1s)}
+.pl-t{padding-top:calc(5% + 40px)}
+header.top.ov{margin-bottom:-78px}
+header.top.ov .wrap{transition:background .25s,border-color .25s,box-shadow .25s}
+header.top.ov:not(.solid) .wrap{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none}
+header.top.ov:not(.solid) .logo,header.top.ov:not(.solid) .rt2>a:not(.btn):not(.mchip){color:var(--cream)}
+.scene{margin-top:0}
+@media(max-width:700px){.pl-t{padding-top:calc(20% + 40px)}.scene{padding-top:0}header.top.ov:not(.solid) nav.m .rt2>a:not(.btn):not(.mchip){color:var(--ink)}}
+@media(prefers-reduced-motion:reduce){.pl-t h1 span{animation:none}}
+header.top.ov{margin-bottom:-68px}
+nav.m .rt2 .mchip{background:var(--yellow);color:var(--ink)}
+nav.m .rt2 a.btn{background:var(--cream);color:var(--ink)}
+@media(max-width:900px){header.top.ov{margin-bottom:-62px}}

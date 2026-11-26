@@ -4,12 +4,12 @@ function pHome() {
   const { settings: s, cats, items } = S.home; const feat = items.filter(i => i.featured).slice(0, 2);
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
   const lat = [...items].filter(x => x.type === 'video').sort((a, b) => (b.ep || 0) - (a.ep || 0))[0] || latest[0];
-  const pos = [[8, 16], [24, 6], [76, 8], [90, 22], [6, 44], [93, 48], [14, 58], [84, 56], [28, 66], [66, 66], [50, 4]];
+  const pos = [[6, 36], [22, 46], [76, 34], [90, 44], [4, 56], [93, 58], [14, 64], [84, 68], [28, 68], [66, 68], [46, 38]];
   const cols = ['#F0B400', '#EF642D', '#9DC4D5', '#FADA80', '#2E6FBE', '#fff'];
   shell(`<section class="scene" id="scene" style="--px:0;--py:0;--sy:0"><div class="sk"></div><div class="grain"></div>
   <div class="pl pl-q" style="--d:.15" aria-hidden="true">؟</div>
   <div class="pl pl-o" style="--d:.6">${cats.slice(0, 11).map((c, n) => `<a class="orb o${n}" href="#/explore?cat=${c.id}" style="inset-inline-start:${(pos[n][0]*.8).toFixed(0)}%;top:${pos[n][1]}%;--c:${cols[n % 6]};--dl:${(n * -.7).toFixed(1)}s"><span>${cicon(c.id, 22)}${esc(c.name)}</span></a>`).join('')}</div>
-  <div class="pl pl-t" style="--d:.3"><h1>${esc(s.heroTitle)}</h1></div>
+  <div class="pl pl-t" style="--d:.3"><h1>${esc(s.heroTitle).split(" ").map((w, n) => `<span style="--i:${n}">${w}</span>`).join(" ")}</h1></div>
   <div class="pl pl-m" style="--d:.5"><div class="hero-art">${mascot('big')}</div></div>
   <div class="pl pl-f" style="--d:1.1" aria-hidden="true">${cloud('fc1')}${cloud('fc2')}${cloud('fc3')}</div>
   <div class="sc-bot"><div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div>
@@ -114,10 +114,16 @@ function pSuggest() {
 }
 
 
+let _ty;
+function typeIt(el, txt) {
+  clearInterval(_ty); if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = txt; return; }
+  let n = 0; el.setAttribute('aria-label', txt); el.textContent = '';
+  _ty = setInterval(() => { if (!document.body.contains(el)) return clearInterval(_ty); el.textContent = txt.slice(0, ++n); if (n >= txt.length) clearInterval(_ty); }, 28);
+}
 function initHero(items) {
   const q = items.filter(i => i.type !== 'checklist'); const t = $('#hqt'), a = $('#hqa'), m = document.querySelector('.hero-art .big'); if (!t || !q.length) return;
   let k = Math.floor(Math.random() * q.length), iv;
-  const show = () => { const i = q[k % q.length]; t.textContent = i.title; a.href = '#/item/' + i.id; t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); };
+  const show = () => { const i = q[k % q.length]; a.href = '#/item/' + i.id; typeIt(t, i.title); t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); };
   const next = () => { k++; show(); clearInterval(iv); iv = setInterval(tick, 6000); };
   const tick = () => { if (!document.getElementById('hqt')) return clearInterval(iv); k++; show(); };
   show(); iv = setInterval(tick, 6000);
@@ -134,10 +140,10 @@ function initHero(items) {
 }
 function initPar() {
   const sc = document.getElementById('scene'); if (!sc || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  let px = 0, py = 0, tx = 0, ty = 0, vis = true, raf = 0, sy = 0;
+  let px = 0, py = 0, tx = 0, ty = 0, vis = true, raf = 0, sy = 0; const hd = document.querySelector('header.top'); hd.classList.add('ov');
   const io = new IntersectionObserver(e => { vis = e[0].isIntersecting; if (vis) loop(); }); io.observe(sc);
   document.addEventListener('pointermove', e => { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; }, { passive: true });
-  addEventListener('scroll', () => { sy = scrollY; }, { passive: true });
+  addEventListener('scroll', () => { sy = scrollY; hd.classList.toggle('solid', sy > 30); }, { passive: true });
   const loop = () => {
     if (!document.body.contains(sc)) return; px += (tx - px) * .08; py += (ty - py) * .08;
     sc.style.setProperty('--px', px.toFixed(3)); sc.style.setProperty('--py', py.toFixed(3)); sc.style.setProperty('--sy', sy);
