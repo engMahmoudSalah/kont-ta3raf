@@ -7,7 +7,8 @@ function pHome() {
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
   <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
-  <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>ست تصنيفات، وكل واحد فيه ما يستحق أن تعرفه</small></div>
+  ${forYou(items, cats)}
+  <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>${cats.length} عالماً، وكل واحد فيه ما يستحق أن تعرفه</small></div>
   <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
   ${feat.length ? `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مختارات<small>ابدأ من هنا</small></div><div class="feat" style="margin-top:22px">${feat.map(card).join('')}</div></div></section>` : ''}
   <section class="s" style="padding-top:0"><div class="wrap"><div class="h2">الأحدث</div><div class="grid">${latest.map(card).join('')}</div>
@@ -75,7 +76,7 @@ function pAuth(mode) {
   <p style="margin-top:14px;font-size:14px">${sign ? 'عندك حساب؟ <a href="#/login"><b>ادخل</b></a>' : setup ? '' : 'جديد هنا؟ <a href="#/signup"><b>أنشئ حساباً</b></a>'}</p></div></div>`, '/login');
   $('#af').onsubmit = async e => {
     e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
-    try { const r = await api(setup ? '/auth/setup' : sign ? '/auth/signup' : '/auth/login', 'POST', f); S.token = r.token; localStorage.kt_token = r.token; S.user = r.user; toast('أهلاً ' + r.user.name); location.hash = r.user.role === 'admin' ? '#/admin' : '#/account'; }
+    try { const r = await api(setup ? '/auth/setup' : sign ? '/auth/signup' : '/auth/login', 'POST', f); S.token = r.token; localStorage.kt_token = r.token; S.user = r.user; toast('أهلاً ' + r.user.name); location.hash = r.user.role === 'admin' ? '#/admin' : sign ? '#/quiz' : '#/account'; }
     catch (x) { $('#ae').textContent = x.message; }
   };
 }
@@ -117,4 +118,25 @@ function initHero(items) {
     pu.forEach(c => c.setAttribute('transform', `translate(${(dx / d * f).toFixed(2)} ${(dy / d * f).toFixed(2)})`));
   };
   document.addEventListener('pointermove', look, { passive: true });
+}
+
+function pQuiz() {
+  let k = 0; const sc = { explorer: 0, analyst: 0, storyteller: 0, dreamer: 0 };
+  const draw = () => {
+    if (k >= QUIZ.length) {
+      const t = Object.entries(sc).sort((a, b) => b[1] - a[1])[0][0], P = PERSONAS[t];
+      localStorage.kt_persona = t; if (S.user) api('/me/persona', 'POST', { type: t }).then(u => { S.user = { ...S.user, ...u }; }).catch(() => { });
+      return shell(`<div class="wrap"><div class="box quiz" style="text-align:center;margin:30px auto;max-width:560px">${mascot()}<span class="chip" style="background:${P.color};color:#fff">شخصيتك</span><h1 style="margin:10px 0">${P.name}</h1><p>${P.line}</p><p style="margin-top:18px"><a class="btn red" href="#/">شوف صفحتك الرئيسية ←</a></p></div></div>`, '/quiz');
+    }
+    const [q, ans] = QUIZ[k];
+    shell(`<div class="wrap"><div class="box quiz" style="margin:30px auto;max-width:560px"><small>سؤال ${k + 1} من ${QUIZ.length}</small><div class="bar" style="height:8px;background:#fff;border:2px solid var(--ink);border-radius:8px;margin:6px 0 16px;overflow:hidden"><i style="display:block;height:100%;width:${(k / QUIZ.length) * 100}%;background:var(--red)"></i></div><h1 style="font-size:24px;margin-bottom:14px">${q}</h1>
+    <div class="qa">${ans.map(([t, l]) => `<button class="btn w" data-t="${t}" style="width:100%;margin-bottom:10px;text-align:start;justify-content:flex-start">${l}</button>`).join('')}</div></div></div>`, '/quiz');
+    document.querySelector('.qa').onclick = e => { const t = e.target.closest('[data-t]'); if (!t) return; sc[t.dataset.t]++; k++; draw(); };
+  };
+  draw();
+}
+function forYou(items, cats) {
+  const t = persona(); if (!t) return `<section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--sand)">${mascot()}<div style="flex:1;min-width:200px"><b>أي نوع قارئ أنت؟</b><br>4 أسئلة سريعة، وبعدها الموقع يتغيّر على مزاجك.</div><a class="btn red sm" href="#/quiz">ابدأ الاختبار</a></div></div></section>`;
+  const P = PERSONAS[t], pick = items.filter(i => P.cats.includes(i.cat)).sort((a, b) => P.cats.indexOf(a.cat) - P.cats.indexOf(b.cat) || b.created - a.created).slice(0, 3);
+  return `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مخصّص لك: ${P.name}<small>${P.line} <a href="#/quiz"><b>غيّر شخصيتك</b></a></small></div><div class="grid" style="margin-top:18px;border-top:6px solid ${P.color};padding-top:18px">${pick.map(card).join('') || '<p class="empty">قريباً</p>'}</div></div></section>`;
 }

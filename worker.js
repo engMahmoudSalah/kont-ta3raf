@@ -40,7 +40,7 @@ async function me(req, env) {
   const u = await get(env, 'user:' + s.email, null); if (!u || u.banned) return null;
   return u;
 }
-const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done });
+const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done, persona: u.persona || '' });
 const isStaff = u => u && (u.role === 'admin' || u.role === 'editor');
 const live = (i, n = Date.now()) => i.status === 'published' && (!i.publishAt || i.publishAt <= n);
 const slim = i => { const { body, ...r } = i; return r; };
@@ -203,6 +203,11 @@ export default {
       if (!u) return err('unauth', 401); const id = clip(body.id, 60);
       u.done = u.done.includes(id) ? u.done.filter(x => x !== id) : [...u.done, id].slice(-500);
       await put(env, 'user:' + u.email, u); return J({ done: u.done });
+    }
+    if (p === '/api/me/persona' && m === 'POST') {
+      if (!u) return err('unauth', 401);
+      if (!['explorer', 'analyst', 'storyteller', 'dreamer'].includes(body.type)) return err('نوع غير صالح');
+      u.persona = body.type; await put(env, 'user:' + u.email, u); return J(pub(u));
     }
     if (p === '/api/me/profile' && m === 'POST') {
       if (!u) return err('unauth', 401);
