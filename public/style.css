@@ -504,3 +504,7 @@ footer:before{content:"";position:absolute;inset-inline:0;top:-90px;height:90px;
 @media(prefers-reduced-motion:reduce){.tapeline span{animation:none}.hl,.lr,.cl{transition:none}}
 .cl.dk{color:#fff}.cl.dk svg{stroke:#fff!important}.cl.dk small{background:#fff;color:var(--ink)}
 .grid[style*="grid-template-columns:1fr"]>.card:first-child{grid-column:auto}
+/* v33: footer always reaches the bottom (zoomed viewport) */
+#app{min-height:125vh;display:flex;flex-direction:column}
+#app>main{flex:1 0 auto;padding-bottom:70px}
+#app>footer{margin-top:0}
