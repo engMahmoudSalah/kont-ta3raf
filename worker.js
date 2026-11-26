@@ -16,9 +16,10 @@ async function get(env, k, d) { const v = await env.KV.get(k, 'json'); return v 
 const put = (env, k, v, o) => env.KV.put(k, JSON.stringify(v), o);
 
 async function init(env) {
-  if (await env.KV.get('inited')) return;
+  if (await env.KV.get('inited') && !(await env.KV.get('fixdates') === null)) return;
+  if (await env.KV.get('inited')) { const it = await get(env, 'items', []); const n = Date.now(); it.forEach((x, k) => { if (x.created < 1e12) x.created = n - k * 3600000; }); await put(env, 'items', it); await env.KV.put('fixdates', '1'); return; }
   await put(env, 'items', ITEMS); await put(env, 'rules', RULES); await put(env, 'settings', SETTINGS);
-  await put(env, 'cats', CATS); await env.KV.put('inited', '1');
+  await put(env, 'cats', CATS); await env.KV.put('inited', '1'); await env.KV.put('fixdates', '0'); const it = ITEMS.map((x, k) => ({ ...x, created: Date.now() - k * 3600000 })); await put(env, 'items', it);
 }
 async function hit(env, key, n = 1) {
   const k = 'stat:' + day(); const s = await get(env, k, {});
