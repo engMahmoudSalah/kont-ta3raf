@@ -508,3 +508,6 @@ footer:before{content:"";position:absolute;inset-inline:0;top:-90px;height:90px;
 #app{min-height:125vh;display:flex;flex-direction:column}
 #app>main{flex:1 0 auto;padding-bottom:70px}
 #app>footer{margin-top:0}
+/* v34: clean line above footer */
+footer:before{display:none}
+footer{border-top:var(--b);margin-top:0}
