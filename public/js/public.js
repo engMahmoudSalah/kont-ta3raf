@@ -109,7 +109,7 @@ async function pAccount() {
 }
 function pPlans() {
   const s = S.home.settings;
-  shell(`<div class="wrap"><section class="s"><div class="h2">الخطط<small>ابدأ مجاناً</small></div><div class="plans">${s.plans.map((p, k) => `<div class="plan ${k ? 'hi' : ''}"><h3>${esc(p.name)}</h3><div class="pr">${p.soon ? 'قريباً' : 'مجاناً'}</div><ul>${p.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul><a class="btn ${k ? '' : 'red'}" href="#/signup">${p.soon ? 'سجّل لتُبلَّغ' : 'ابدأ الآن'}</a></div>`).join('')}</div></section></div>`, '/plans');
+  shell(`<div class="wrap"><section class="s"><div class="h2">الخطط<small>ابدأ مجاناً</small></div><div class="plans">${s.plans.map((p, k) => `<div class="plan ${k ? 'hi' : ''}"><h3>${esc(p.name)}</h3><div class="pr">${p.soon ? 'قريباً' : 'بدون بطاقة'}</div><ul>${p.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul><a class="btn ${k ? '' : 'red'}" href="#/signup">${p.soon ? 'سجّل لتُبلَّغ' : 'ابدأ الآن'}</a></div>`).join('')}</div></section></div>`, '/plans');
 }
 function pSuggest() {
   shell(`<div class="wrap"><div class="box auth"><div class="h2">اقترح موضوعاً<small>ما الذي تتمنى أن نشرحه؟</small></div><textarea id="st" maxlength="500" placeholder="مثال: لماذا نشعر بالدوار في السيارة؟"></textarea><p style="margin-top:12px"><button class="btn red" id="sb">إرسال</button></p><div class="err" id="se"></div></div></div>`, '/suggest');

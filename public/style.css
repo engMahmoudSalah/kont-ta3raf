@@ -511,3 +511,11 @@ footer:before{content:"";position:absolute;inset-inline:0;top:-90px;height:90px;
 /* v34: clean line above footer */
 footer:before{display:none}
 footer{border-top:var(--b);margin-top:0}
+/* v38 organic kids + plans */
+.kf{gap:14px}
+.kf .kc:nth-child(odd){transform:rotate(-1.6deg)}.kf .kc:nth-child(even){transform:rotate(1.4deg) translateY(10px)}
+.kf .kc:nth-child(3n){border-radius:34px 14px 34px 14px}.kf .kc:nth-child(3n+1){border-radius:14px 34px 14px 34px}
+.kf .kc:active{transform:scale(.97) rotate(0)}
+.plans{max-width:820px}.plan:nth-child(1){transform:rotate(-1deg)}.plan:nth-child(2){transform:rotate(1deg) translateY(12px)}
+.plan .pr{font-size:28px}.plan.hi .btn{box-shadow:3px 3px 0 var(--lsh)}
+@media(prefers-reduced-motion:reduce){.kf .kc,.plan{transform:none!important}}
