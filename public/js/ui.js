@@ -47,7 +47,7 @@ function shell(inner, route, o = {}) {
   $('#app').innerHTML = `${s.announcement ? `<div class="ann" role="note">${esc(s.announcement)}</div>` : ''}
   <a class="skip" href="#main" onclick="event.preventDefault();document.getElementById('main').focus()">تخطّي إلى المحتوى</a><header class="top"><div class="wrap"><a class="logo" href="#/">${mascot()}${esc(s.siteName)}</a>
   <button class="burger" aria-label="القائمة" aria-expanded="false" onclick="const n=document.querySelector('nav.m');this.setAttribute('aria-expanded',n.classList.toggle('open'))"><span></span></button>
-  <nav class="m" onclick="this.classList.remove('open')">${link('/', 'الرئيسية')}${link('/episodes', 'الحلقات')}${link('/explore', 'استكشف')}${s.showPlans ? link('/plans', 'الخطط') : ''}${link('/suggest', 'اقترح موضوعاً')}
+  <nav class="m" onclick="this.classList.remove('open')">${link('/', 'الرئيسية')}${link('/episodes', 'الحلقات')}${link('/explore', 'استكشف')}${link('/play', 'العب')}${link('/kids', 'ركن الصغار')}${s.showPlans ? link('/plans', 'الخطط') : ''}${link('/suggest', 'اقترح موضوعاً')}
   ${u ? `${u.role !== 'user' ? link('/admin', 'لوحة التحكم') : ''}${link('/account', 'حسابي')}` : `${link('/login', 'دخول')}<a class="btn sm" href="#/signup">انضم مجاناً</a>`}</nav></div></header>
   <main id="main" class="${o.admin ? 'is-admin' : ''}">${inner}</main>
   <footer><div class="wrap"><div><b style="font-size:20px">${esc(s.siteName)}</b><br>معلومة قصيرة كل يوم، مصنّفة ومراجعة.</div>

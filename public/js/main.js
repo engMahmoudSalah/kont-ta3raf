@@ -2,7 +2,7 @@
 const ROUTES = {
   '': () => pHome(), explore: b => pExplore(b), episodes: () => pEpisodes(), item: b => pItem(b),
   login: () => pAuth('login'), signup: () => pAuth('signup'), setup: () => pAuth('setup'),
-  account: () => pAccount(), plans: () => pPlans(), suggest: () => pSuggest(), quiz: () => pQuiz(), play: () => pPlay(), admin: b => pAdmin(b),
+  account: () => pAccount(), plans: () => pPlans(), suggest: () => pSuggest(), quiz: () => pQuiz(), play: () => pPlay(), kids: () => pKids(), admin: b => pAdmin(b),
 };
 async function route() {
   const hq = location.hash.split('?'); window.HQ = new URLSearchParams(hq[1] || '');
