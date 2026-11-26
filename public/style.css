@@ -519,3 +519,7 @@ footer{border-top:var(--b);margin-top:0}
 .plans{max-width:820px}.plan:nth-child(1){transform:rotate(-1deg)}.plan:nth-child(2){transform:rotate(1deg) translateY(12px)}
 .plan .pr{font-size:28px}.plan.hi .btn{box-shadow:3px 3px 0 var(--lsh)}
 @media(prefers-reduced-motion:reduce){.kf .kc,.plan{transform:none!important}}
+/* v39 play */
+.dots{display:flex;gap:8px;margin-top:6px}.dots i{width:26px;height:8px;border-radius:8px;border:1.5px solid var(--line);background:#fff}.dots i.on{background:var(--blue)}.dots i.cur{background:var(--yellow,#F0B400)}
+.quiz{transform:rotate(-.6deg)}
+@media(prefers-reduced-motion:reduce){.quiz{transform:none}}
