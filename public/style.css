@@ -664,3 +664,6 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 .itb select{width:auto;min-width:150px;flex:none}#ic .chip::before{display:none}
 @media(max-width:700px){.itb select{width:100%}}
 #ct .chip::before{display:none}
+.mrp{margin-top:10px;padding:10px;background:rgba(0,0,0,.04);border-radius:12px}.mrp textarea{width:100%;min-height:90px;margin:8px 0;font-size:16px}
+.rp{margin-top:8px;padding:8px 12px;border-inline-start:3px solid var(--blue);background:rgba(46,111,190,.08);border-radius:6px}
+.mrp .chip::before{display:none}

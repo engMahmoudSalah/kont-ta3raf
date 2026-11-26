@@ -97,16 +97,44 @@ async function aContent(el, editing) {
   draw();
 }
 async function aComments(el) {
-  const l = await api('/admin/comments');
-  el.innerHTML = l.length ? l.map(c => `<div class="cm"><b>${esc(c.by)}</b> <small>${esc(c.email)} · ${esc(c.itemTitle)} · <span class="pill ${c.status === 'ok' ? 'g' : c.status === 'pending' ? 'y' : 'r'}">${c.status === 'ok' ? 'ظاهر' : c.status === 'pending' ? 'ينتظر' : 'مخفي'}</span></small><div>${esc(c.text)}</div>
-  ${c.reply ? `<div class="rp">${c.reply.auto ? 'ردّ تلقائي: ' : 'ردّك: '}${esc(c.reply.text)}</div>` : ''}
-  <div class="bar" style="margin:8px 0 0"><input placeholder="اكتب ردّاً" data-r="${c.id}" style="max-width:260px"><button class="btn sm" data-a="reply" data-i="${c.id}" data-p="${esc(c.item)}">ردّ</button>
-  ${c.status !== 'ok' ? `<button class="btn sm blue" data-a="approve" data-i="${c.id}" data-p="${esc(c.item)}">اعتماد</button>` : `<button class="btn sm w" data-a="hide" data-i="${c.id}" data-p="${esc(c.item)}">إخفاء</button>`}<button class="btn sm danger" data-a="delete" data-i="${c.id}" data-p="${esc(c.item)}">حذف</button></div></div>`).join('') : emptyBox('لا تعليقات بعد');
-  el.onclick = async e => {
-    const a = e.target.dataset.a; if (!a) return;
-    const text = a === 'reply' ? el.querySelector(`[data-r="${e.target.dataset.i}"]`).value : '';
-    await api('/admin/comments', 'POST', { action: a, id: e.target.dataset.i, item: e.target.dataset.p, text }); aComments(el);
+  let l = await api('/admin/comments'); let f = { st: 'pending', q: '', nr: false, sort: 'new' }, sel = new Set(), rp = '';
+  const SN = { pending: 'ينتظر', ok: 'ظاهر', hidden: 'مخفي' }, QR = ['شكراً على تعليقك!', 'سؤال حلو، هنجاوب عليه في حلقة قادمة.', 'تمام، اتسجّل عندنا.'];
+  if (l.length && !l.some(c => c.status === 'pending')) f.st = '';
+  const sOf = c => c.status === 'ok' ? 'ok' : c.status === 'pending' ? 'pending' : 'hidden';
+  const call = async (c, a, text) => api('/admin/comments', 'POST', { action: a, id: c.id, item: c.item, text: text || '' });
+  const reload = async () => { l = await api('/admin/comments'); draw(); };
+  const bulk = async a => { const cs = l.filter(c => sel.has(c.id)); try { for (const c of cs) await call(c, a); sel.clear(); toast('تم'); } catch (e) { toast(e.message); } reload(); };
+  const draw = () => {
+    const cnt = k => l.filter(c => sOf(c) === k).length, nr = l.filter(c => !c.reply).length;
+    let r = l.filter(c => (!f.st || sOf(c) === f.st) && (!f.nr || !c.reply) && (!f.q || (c.text + ' ' + c.by + ' ' + (c.itemTitle || '')).includes(f.q)));
+    r = r.slice().sort((a, b) => f.sort === 'old' ? (a.t || 0) - (b.t || 0) : (b.t || 0) - (a.t || 0));
+    const filt = f.st || f.q || f.nr;
+    el.innerHTML = `<div class="ikp"><button class="${f.st === 'pending' ? 'on' : ''}" data-st="pending"><b>${cnt('pending')}</b><span>ينتظر المراجعة</span></button><button class="${f.st === 'ok' ? 'on' : ''}" data-st="ok"><b>${cnt('ok')}</b><span>ظاهر</span></button><button class="${f.st === 'hidden' ? 'on' : ''}" data-st="hidden"><b>${cnt('hidden')}</b><span>مخفي</span></button><button class="${f.nr ? 'on' : ''}" data-nr="1"><b>${nr}</b><span>بدون ردّ</span></button></div>
+    <div class="itb"><input id="mq" type="search" placeholder="ابحث في التعليقات أو الأسماء أو الحلقات" value="${esc(f.q)}"><select id="ms" aria-label="الترتيب"><option value="new" ${f.sort === 'new' ? 'selected' : ''}>الأحدث</option><option value="old" ${f.sort === 'old' ? 'selected' : ''}>الأقدم</option></select></div>
+    <p class="icn">${r.length} من ${l.length}${filt ? ' · <button class="lk" id="mcl">عرض الكل</button>' : ''}</p>
+    ${sel.size ? `<div class="ibk"><b>${sel.size} محدد</b><button class="btn sm blue" data-b="approve">اعتماد</button><button class="btn sm w" data-b="hide">إخفاء</button><button class="btn sm danger" data-b="delete">حذف</button><button class="lk" id="mx">إلغاء</button></div>` : r.some(c => sOf(c) === 'pending') ? '<div class="ibk" style="background:#fff"><button class="btn sm blue" id="sa">تحديد كل المنتظر واعتماده</button></div>' : ''}
+    <div class="ilist">${r.map(c => { const s = sOf(c), o = rp === c.id; return `<div class="ig ${sel.has(c.id) ? 'sel' : ''}"><label class="ck"><input type="checkbox" data-sel="${c.id}" ${sel.has(c.id) ? 'checked' : ''} aria-label="تحديد"></label><div class="ib"><div class="im"><b>${esc(c.by)}</b><span class="pill ${s === 'ok' ? 'g' : s === 'pending' ? 'y' : 'r'}">${SN[s]}</span><small>${esc(c.email || '')} · ${esc(c.itemTitle || '')}${c.t ? ' · ' + date(c.t) : ''}</small></div>
+    <div class="it" style="-webkit-line-clamp:unset;cursor:default">${esc(c.text)}</div>${c.reply ? `<div class="rp">${c.reply.auto ? 'ردّ تلقائي: ' : 'ردّك: '}${esc(c.reply.text)}</div>` : ''}
+    <div class="ia">${s !== 'ok' ? `<button class="btn sm blue" data-a="approve" data-i="${c.id}">اعتماد</button>` : `<button class="btn sm w" data-a="hide" data-i="${c.id}">إخفاء</button>`}<button class="btn sm w" data-a="open" data-i="${c.id}">${c.reply ? 'عدّل الردّ' : 'ردّ'}</button><button class="btn sm danger" data-a="delete" data-i="${c.id}">حذف</button></div>
+    ${o ? `<div class="mrp"><div class="bar strip">${QR.map(q => `<span class="chip" role="button" tabindex="0" data-q="${esc(q)}">${esc(q)}</span>`).join('')}</div><textarea id="mr" maxlength="500" placeholder="اكتب ردّاً">${esc(c.reply && !c.reply.auto ? c.reply.text : '')}</textarea><div class="ia"><button class="btn sm" data-a="send" data-i="${c.id}">إرسال الردّ</button><button class="btn sm w" data-a="close">إلغاء</button></div></div>` : ''}</div></div>`; }).join('') || emptyBox(l.length ? 'مفيش تعليقات بالفلتر ده' : 'لا تعليقات بعد')}</div>`;
+    const q = $('#mq'); q.oninput = () => { f.q = q.value; clearTimeout(draw.t); draw.t = setTimeout(() => { draw(); const n = $('#mq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    $('#ms').onchange = e => { f.sort = e.target.value; draw(); };
+    const cl = $('#mcl'); if (cl) cl.onclick = () => { f = { ...f, st: '', q: '', nr: false }; draw(); };
+    el.querySelector('.ikp').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.nr) f.nr = !f.nr; else f.st = f.st === b.dataset.st ? '' : b.dataset.st; draw(); };
+    el.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { if (b.dataset.b === 'delete' && !confirm(`حذف ${sel.size} تعليق؟`)) return; bulk(b.dataset.b); });
+    const mx = $('#mx'); if (mx) mx.onclick = () => { sel.clear(); draw(); };
+    const sa = $('#sa'); if (sa) sa.onclick = () => { r.filter(c => sOf(c) === 'pending').forEach(c => sel.add(c.id)); bulk('approve'); };
+    el.querySelectorAll('[data-q]').forEach(c => c.onclick = () => { $('#mr').value = c.dataset.q; });
+    el.querySelector('.ilist').onclick = async e => {
+      const t = e.target;
+      if (t.dataset.sel) { t.checked ? sel.add(t.dataset.sel) : sel.delete(t.dataset.sel); return draw(); }
+      const a = t.dataset.a; if (!a) return; const c = l.find(x => x.id === t.dataset.i);
+      if (a === 'open') { rp = c.id; return draw(); } if (a === 'close') { rp = ''; return draw(); }
+      if (a === 'delete' && !confirm('حذف هذا التعليق؟')) return;
+      try { if (a === 'send') { const v = $('#mr').value.trim(); if (!v) return toast('اكتب الردّ'); await call(c, 'reply', v); rp = ''; } else await call(c, a); toast('تم'); } catch (er) { toast(er.message); } reload();
+    };
   };
+  draw();
 }
 async function aRules(el) {
   let rules = await api('/admin/rules');
