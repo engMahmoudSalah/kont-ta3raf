@@ -302,6 +302,16 @@ export default {
       const rules = (Array.isArray(body.rules) ? body.rules : []).slice(0, 40).map(r => ({ id: clip(r.id, 20) || rid(4), keywords: (r.keywords || []).map(k => clip(k, 40)).filter(Boolean).slice(0, 12), reply: clip(r.reply, 500), on: !!r.on, hits: +r.hits || 0 }));
       await put(env, 'rules', rules); await log(env, u.email, 'تحديث الردود التلقائية'); return J(rules);
     }
+    if (p === '/api/admin/suggestions/bulk' && m === 'POST') {
+      const ids = new Set((body.ids || []).map(String).slice(0, 200)), act = String(body.action || ''); let l = await get(env, 'suggestions', []);
+      if (!ids.size) return err('اختار اقتراحاً');
+      if (act === 'status') { const st = String(body.status || ''); if (!['new', 'plan', 'done', 'no'].includes(st)) return err('حالة غير صحيحة'); l.forEach(x => { if (ids.has(x.id)) x.status = st; }); }
+      else if (act === 'star' || act === 'unstar') l.forEach(x => { if (ids.has(x.id)) x.star = act === 'star'; });
+      else if (act === 'delete') { if (!admin) return err('forbidden', 403); l = l.filter(x => !ids.has(x.id)); }
+      else if (act === 'merge') { const keep = String(body.keep || ''); if (!ids.has(keep) || ids.size < 2) return err('اختار اقتراحين على الأقل'); const k = l.find(x => x.id === keep); k.merged = (k.merged || 0) + ids.size - 1; l = l.filter(x => !ids.has(x.id) || x.id === keep); }
+      else return err('إجراء غير معروف');
+      await put(env, 'suggestions', l); return J({ ok: true, count: l.length });
+    }
     if (p === '/api/admin/suggestions') return J(await get(env, 'suggestions', []));
     if (p === '/api/admin/users' && m === 'GET') {
       const out = []; for (const e of await get(env, 'users', [])) { const x = await get(env, 'user:' + e, null); if (x) out.push({ ...pub(x), banned: !!x.banned }); }

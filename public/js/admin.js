@@ -153,7 +153,48 @@ async function aSettings(el) {
   if (adm) $('#ss').onclick = async () => { try { await api('/admin/settings', 'POST', { settings: s, cats }); S.home = await api('/home'); toast('تم الحفظ'); } catch (e) { toast(e.message); } };
 }
 async function aIdeas(el) {
-  const l = await api('/admin/suggestions');
-  el.innerHTML = l.length ? l.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}</small><div>${esc(x.text)}</div></div>`).join('') : emptyBox('لا اقتراحات بعد');
+  let l = await api('/admin/suggestions'); const cats = (S.home && S.home.cats) || [];
+  const ST = [['new', 'جديد'], ['plan', 'قيد الدراسة'], ['done', 'اتنفّذ'], ['no', 'مرفوض']];
+  let f = { st: '', q: '', cat: '', sort: 'new', dup: false }, sel = new Set(), open = '';
+  const parse = x => { const m = /^\[([^\]]+)\]\s*/.exec(x.text); return { cat: m ? m[1] : '', body: m ? x.text.slice(m[0].length) : x.text }; };
+  const words = t => new Set(t.replace(/[^\u0600-\u06FFa-z0-9\s]/gi, ' ').split(/\s+/).filter(w => w.length > 2));
+  const dupMap = () => { const ws = l.map(x => words(parse(x).body)), m = {}; for (let i = 0; i < l.length; i++) for (let j = i + 1; j < l.length; j++) { if (ws[i].size < 2 || ws[j].size < 2) continue; let n = 0; ws[i].forEach(w => { if (ws[j].has(w)) n++; }); if (n / Math.min(ws[i].size, ws[j].size) >= .6) { (m[l[i].id] = m[l[i].id] || []).push(l[j].id); (m[l[j].id] = m[l[j].id] || []).push(l[i].id); } } return m; };
+  const act = async (a, extra) => { try { await api('/admin/suggestions/bulk', 'POST', { ids: [...sel], action: a, ...extra }); l = await api('/admin/suggestions'); sel.clear(); if (f.dup && !Object.keys(dupMap()).length) f.dup = false; draw(); toast('تم'); } catch (e) { toast(e.message); } };
+  const draw = () => {
+    const dm = dupMap(), cnt = k => l.filter(x => (x.status || 'new') === k).length, cs = [...new Set(l.map(x => parse(x).cat).filter(Boolean))];
+    let r = l.filter(x => (!f.st || (x.status || 'new') === f.st) && (!f.cat || parse(x).cat === f.cat) && (!f.dup || dm[x.id]) && (!f.q || x.text.includes(f.q) || (x.by || '').includes(f.q)));
+    r = r.slice().sort((a, b) => f.sort === 'old' ? a.t - b.t : f.sort === 'star' ? (!!b.star - !!a.star) || b.t - a.t : b.t - a.t);
+    const ne = Object.keys(dm).length;
+    const row = x => { const p = parse(x), s = x.status || 'new', d = dm[x.id], o = open === x.id; return `<div class="ig ${sel.has(x.id) ? 'sel' : ''} s-${s}" data-id="${x.id}"><label class="ck"><input type="checkbox" data-sel="${x.id}" ${sel.has(x.id) ? 'checked' : ''} aria-label="تحديد"></label>
+      <div class="ib"><div class="im"><button class="st${x.star ? ' on' : ''}" data-star="${x.id}" aria-label="تمييز" aria-pressed="${!!x.star}">★</button>${p.cat ? `<span class="pill">${esc(p.cat)}</span>` : ''}<span class="pill s${s}">${ST.find(q => q[0] === s)[1]}</span>${x.merged ? `<span class="pill">+${x.merged} مدموج</span>` : ''}${d ? `<span class="pill dp" data-dup="${x.id}">${d.length} مشابه</span>` : ''}<small>${esc(x.by)} · ${date(x.t)}</small></div>
+      <div class="it ${o ? 'o' : ''}" data-open="${x.id}">${esc(p.body)}</div>
+      ${o ? `<div class="ia">${ST.map(([k, n]) => `<button class="btn w sm" data-mv="${k}" data-i="${x.id}" ${k === s ? 'disabled' : ''}>${n}</button>`).join('')}</div>` : ''}</div></div>`; };
+    el.innerHTML = `<div class="ikp">${ST.map(([k, n]) => `<button class="${f.st === k ? 'on' : ''}" data-st="${k}"><b>${cnt(k)}</b><span>${n}</span></button>`).join('')}</div>
+    <div class="itb"><input id="iq" type="search" placeholder="ابحث في الاقتراحات" value="${esc(f.q)}"><select id="is" aria-label="الترتيب"><option value="new" ${f.sort === 'new' ? 'selected' : ''}>الأحدث</option><option value="old" ${f.sort === 'old' ? 'selected' : ''}>الأقدم</option><option value="star" ${f.sort === 'star' ? 'selected' : ''}>المميّز أولاً</option></select></div>
+    <div class="bar strip" id="ic" role="group" aria-label="التصنيف"><span class="chip${!f.cat ? ' on' : ''}" role="button" tabindex="0" data-c="">الكل</span>${cs.map(c => `<span class="chip${f.cat === c ? ' on' : ''}" role="button" tabindex="0" data-c="${esc(c)}">${esc(c)}</span>`).join('')}${ne ? `<span class="chip${f.dup ? ' on' : ''}" role="button" tabindex="0" data-d="1">المتشابهة (${ne})</span>` : ''}</div>
+    <p class="icn">${r.length} من ${l.length}${(f.st || f.cat || f.q || f.dup) ? ' · <button class="lk" id="icl">مسح الفلاتر</button>' : ''}</p>
+    ${sel.size ? `<div class="ibk"><b>${sel.size} محدد</b>${ST.map(([k, n]) => `<button class="btn w sm" data-bs="${k}">${n}</button>`).join('')}<button class="btn w sm" data-bk="star">تمييز</button>${sel.size > 1 ? '<button class="btn w sm" id="bm">دمج المتشابه</button>' : ''}${S.user.role === 'admin' ? '<button class="btn w sm" id="bd">حذف</button>' : ''}<button class="lk" id="bx">إلغاء</button></div>` : ''}
+    <div class="ilist">${r.map(row).join('') || emptyBox(l.length ? 'مفيش نتائج بالفلتر ده' : 'لا اقتراحات بعد')}</div>`;
+    const q = $('#iq'); q.oninput = () => { f.q = q.value; clearTimeout(draw.t); draw.t = setTimeout(() => { draw(); const n = $('#iq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    $('#is').onchange = e => { f.sort = e.target.value; draw(); };
+    const cl = $('#icl'); if (cl) cl.onclick = () => { f = { ...f, st: '', q: '', cat: '', dup: false }; draw(); };
+    $('#ic').onclick = e => { const c = e.target.closest('[data-c],[data-d]'); if (!c) return; if (c.dataset.d) f.dup = !f.dup; else f.cat = c.dataset.c; draw(); };
+    $('#ic').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); } };
+    el.querySelector('.ikp').onclick = e => { const b = e.target.closest('[data-st]'); if (b) { f.st = f.st === b.dataset.st ? '' : b.dataset.st; draw(); } };
+    el.querySelector('.ilist').onclick = e => {
+      const t = e.target;
+      if (t.dataset.sel) { t.checked ? sel.add(t.dataset.sel) : sel.delete(t.dataset.sel); return draw(); }
+      if (t.dataset.star) { sel = new Set([t.dataset.star]); return act(l.find(x => x.id === t.dataset.star).star ? 'unstar' : 'star'); }
+      if (t.dataset.mv) { sel = new Set([t.dataset.i]); return act('status', { status: t.dataset.mv }); }
+      if (t.dataset.dup) { const g = [t.dataset.dup, ...dm[t.dataset.dup]]; sel = new Set(g); f = { ...f, st: '', q: '', cat: '', dup: true }; return draw(); }
+      const o = t.closest('[data-open]'); if (o) { open = open === o.dataset.open ? '' : o.dataset.open; draw(); }
+    };
+    el.querySelectorAll('[data-bs]').forEach(b => b.onclick = () => act('status', { status: b.dataset.bs }));
+    el.querySelectorAll('[data-bk]').forEach(b => b.onclick = () => act('star'));
+    const bm = $('#bm'); if (bm) bm.onclick = () => { const ids = [...sel], keep = l.filter(x => sel.has(x.id)).sort((a, b) => a.t - b.t)[0].id; if (confirm(`دمج ${ids.length} اقتراحات في أقدمهم؟`)) act('merge', { keep }); };
+    const bd = $('#bd'); if (bd) bd.onclick = () => { if (confirm(`حذف ${sel.size} اقتراح؟`)) act('delete'); };
+    $('#bx') && ($('#bx').onclick = () => { sel.clear(); draw(); });
+  };
+  draw();
 }
 
