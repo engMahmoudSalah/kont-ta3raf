@@ -667,3 +667,11 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 .mrp{margin-top:10px;padding:10px;background:rgba(0,0,0,.04);border-radius:12px}.mrp textarea{width:100%;min-height:90px;margin:8px 0;font-size:16px}
 .rp{margin-top:8px;padding:8px 12px;border-inline-start:3px solid var(--blue);background:rgba(46,111,190,.08);border-radius:6px}
 .mrp .chip::before{display:none}
+/* v75 admin rules */
+.rl{align-items:flex-start}.rl.off .ib{opacity:.6}.rn{display:flex;flex-direction:column;align-items:center;gap:2px}.rn b{font-size:20px}.rn button{border:0;background:rgba(0,0,0,.06);border-radius:8px;width:30px;height:26px;cursor:pointer;font-size:12px}.rn button[disabled]{opacity:.3;cursor:default}
+.tg{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:800}.tg input{position:absolute;opacity:0;width:1px;height:1px}.tg i{width:44px;height:26px;border-radius:26px;border:1.5px solid var(--line);background:#ddd;position:relative;transition:background .15s}.tg i::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:18px;height:18px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);transition:inset-inline-start .15s}.tg input:checked+i{background:#7bd08a}.tg input:checked+i::after{inset-inline-start:20px}.tg input:focus-visible+i{outline:3px solid var(--blue)}
+.kwb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:8px;background:rgba(0,0,0,.045);border-bottom:3px solid var(--ink);border-radius:12px 12px 0 0}
+.kw{min-height:34px!important;padding:0 6px 0 12px!important;font-size:15px!important;display:inline-flex;align-items:center;gap:6px}.kw::before{display:none!important}.kw.dp{background:#f7c3b0}.kw button{border:0;background:rgba(0,0,0,.1);border-radius:50%;width:22px;height:22px;cursor:pointer;line-height:1;font-size:15px}
+.kwi{flex:1;min-width:140px;border:0!important;background:none!important;font-size:16px;padding:8px 4px;border-bottom:0!important}.kwi:focus{outline:0}
+.rl textarea{width:100%;min-height:80px;font-size:16px}.rtest{margin:10px 0 14px;padding:12px;background:rgba(255,210,63,.18);border-radius:12px}.rtest input{width:100%;font-size:16px;padding:10px}.rtest .icn{margin:8px 0 0;color:var(--ink)}
+@media(max-width:700px){.rl{gap:6px}.rn{flex-direction:row;flex-wrap:wrap;width:40px}.rn button{width:36px;height:30px}}

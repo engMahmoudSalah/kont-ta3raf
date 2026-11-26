@@ -137,16 +137,41 @@ async function aComments(el) {
   draw();
 }
 async function aRules(el) {
-  let rules = await api('/admin/rules');
+  let rules = await api('/admin/rules'), saved = JSON.stringify(rules), f = { q: '', on: '' }, test = '';
+  const dirty = () => JSON.stringify(rules) !== saved;
+  const match = t => rules.findIndex(r => r.on && r.keywords.some(k => k && t.toLowerCase().includes(k.toLowerCase())));
+  const dupKw = () => { const m = {}; rules.forEach((r, k) => r.keywords.forEach(w => { const x = w.toLowerCase(); (m[x] = m[x] || new Set()).add(k); })); return Object.fromEntries(Object.entries(m).filter(([, s]) => s.size > 1).map(([w, s]) => [w, [...s]])); };
+  const stat = () => { const d = $('#rsv'); if (d) { d.hidden = !dirty(); } };
   const draw = () => {
-    el.innerHTML = `<p style="margin-bottom:10px">عندما يحتوي تعليق على إحدى الكلمات، يُضاف الردّ فوراً. (الربط بتعليقات يوتيوب وتيك توك يحتاج تفعيل الحسابات من تبويب الربط.)</p>
-    ${rules.map((r, k) => `<div class="box" style="margin:10px 0;padding:14px"><label class="f" style="margin-top:0">الكلمات (بفاصلة)</label><input data-k="${k}" data-f="kw" value="${esc(r.keywords.join('، '))}"><label class="f">الردّ</label><textarea data-k="${k}" data-f="reply" style="min-height:70px">${esc(r.reply)}</textarea>
-    <div class="bar" style="margin-bottom:0"><label class="sw"><input type="checkbox" data-k="${k}" data-f="on" ${r.on ? 'checked' : ''}> مفعّل</label><small>${r.hits || 0} استخدام</small><button class="btn sm danger" data-x="${k}">حذف</button></div></div>`).join('')}
-    <p><button class="btn sm w" id="ar">+ قاعدة</button> <button class="btn sm red" id="sr">حفظ الكل</button></p>`;
-    $('#ar').onclick = () => { rules.push({ id: '', keywords: [], reply: '', on: true }); draw(); };
-    el.oninput = e => { const k = e.target.dataset.k; if (k === undefined) return; const f = e.target.dataset.f; if (f === 'kw') rules[k].keywords = e.target.value.split(/[,،]/).map(x => x.trim()).filter(Boolean); else if (f === 'on') rules[k].on = e.target.checked; else rules[k].reply = e.target.value; };
-    el.onclick = e => { if (e.target.dataset.x !== undefined) { rules.splice(+e.target.dataset.x, 1); draw(); } };
-    $('#sr').onclick = async () => { rules = await api('/admin/rules', 'POST', { rules }); toast('تم الحفظ'); draw(); };
+    const dk = dupKw(), n = rules.length, on = rules.filter(r => r.on).length;
+    const vis = rules.map((r, k) => ({ r, k })).filter(({ r }) => (!f.on || (f.on === 'on' ? r.on : !r.on)) && (!f.q || r.keywords.join(' ').includes(f.q) || r.reply.includes(f.q)));
+    el.innerHTML = `<p class="icn" style="margin-top:0">عندما يحتوي تعليق على إحدى الكلمات يُضاف الردّ فوراً. أول قاعدة مفعّلة تطابق هي اللي تُطبَّق، فالترتيب مهم.</p>
+    <div class="ikp" style="grid-template-columns:repeat(3,1fr)"><button class="${!f.on ? 'on' : ''}" data-o=""><b>${n}</b><span>كل القواعد</span></button><button class="${f.on === 'on' ? 'on' : ''}" data-o="on"><b>${on}</b><span>مفعّلة</span></button><button class="${f.on === 'off' ? 'on' : ''}" data-o="off"><b>${n - on}</b><span>متوقفة</span></button></div>
+    <div class="rtest"><label class="f" for="rt" style="margin-top:0">جرّب تعليقاً</label><input id="rt" value="${esc(test)}" placeholder="اكتب تعليقاً وشوف أي قاعدة هتردّ"><p id="rto" class="icn"></p></div>
+    <div class="itb"><input id="rq" type="search" placeholder="ابحث في الكلمات أو الردود" value="${esc(f.q)}"><button class="btn sm" id="ar">+ قاعدة</button></div>
+    ${Object.keys(dk).length ? `<div class="als"><span class="al">كلمات مكررة في أكتر من قاعدة: <b>${Object.keys(dk).map(esc).join('، ')}</b></span></div>` : ''}
+    <div class="ilist">${vis.map(({ r, k }) => `<div class="ig rl ${r.on ? '' : 'off'}" data-k="${k}"><div class="rn"><b>${k + 1}</b><button data-mv="-1" data-i="${k}" aria-label="لأعلى" ${k === 0 ? 'disabled' : ''}>▲</button><button data-mv="1" data-i="${k}" aria-label="لأسفل" ${k === n - 1 ? 'disabled' : ''}>▼</button></div>
+      <div class="ib"><div class="im"><label class="tg"><input type="checkbox" data-f="on" data-k="${k}" ${r.on ? 'checked' : ''}><i></i><span>${r.on ? 'مفعّلة' : 'متوقفة'}</span></label><small>${r.hits || 0} استخدام</small></div>
+      <div class="kwb" data-k="${k}">${r.keywords.map((w, x) => `<span class="chip kw${dk[w.toLowerCase()] ? ' dp' : ''}">${esc(w)}<button data-rm="${k}:${x}" aria-label="حذف الكلمة">×</button></span>`).join('')}<input class="kwi" data-k="${k}" placeholder="${r.keywords.length ? 'كلمة أخرى' : 'اكتب كلمة واضغط Enter'}" maxlength="40"></div>
+      <textarea data-k="${k}" data-f="reply" maxlength="500" placeholder="نص الردّ">${esc(r.reply)}</textarea><div class="im"><small class="cc" data-c="${k}">${r.reply.length} / 500</small>${!r.keywords.length || !r.reply.trim() ? '<span class="pill y">ناقصة: محتاجة كلمات وردّ</span>' : ''}<button class="btn sm danger" data-x="${k}" style="margin-inline-start:auto">حذف</button></div></div></div>`).join('') || emptyBox(n ? 'مفيش قواعد بالفلتر ده' : 'لا توجد قواعد بعد')}</div>
+    <div class="ibk" id="rsv" ${dirty() ? '' : 'hidden'}><b>فيه تغييرات لسه ماتحفظتش</b><button class="btn sm red" id="sr">حفظ الكل</button><button class="lk" id="rv">تراجع</button></div>`;
+    const tst = () => { const t = $('#rt').value; test = t; const o = $('#rto'); if (!t.trim()) { o.textContent = ''; return; } const m = match(t); o.innerHTML = m < 0 ? 'مفيش قاعدة هتردّ على ده.' : `هتردّ القاعدة <b>${m + 1}</b>: ${esc(rules[m].reply)}`; };
+    $('#rt').oninput = tst; tst();
+    const q = $('#rq'); q.oninput = () => { f.q = q.value; clearTimeout(draw.t); draw.t = setTimeout(() => { draw(); const x = $('#rq'); x.focus(); x.setSelectionRange(x.value.length, x.value.length); }, 250); };
+    el.querySelector('.ikp').onclick = e => { const b = e.target.closest('[data-o]'); if (b) { f.on = b.dataset.o; draw(); } };
+    $('#ar').onclick = () => { rules.push({ id: '', keywords: [], reply: '', on: true }); f = { q: '', on: '' }; draw(); const t = el.querySelectorAll('.kwi'); t[t.length - 1].focus(); t[t.length - 1].scrollIntoView({ block: 'center' }); };
+    const addKw = (k, v) => { v = v.trim().replace(/[,،]+$/, '').trim(); if (v && !rules[k].keywords.includes(v) && rules[k].keywords.length < 12) { rules[k].keywords.push(v); return true; } return false; };
+    el.querySelectorAll('.kwi').forEach(inp => { inp.onkeydown = e => { if (e.key === 'Enter' || e.key === ',' || e.key === '،') { e.preventDefault(); const k = +inp.dataset.k; if (addKw(k, inp.value)) { draw(); const t = el.querySelector(`.kwi[data-k="${k}"]`); t.focus(); } } else if (e.key === 'Backspace' && !inp.value) { const k = +inp.dataset.k; if (rules[k].keywords.pop()) { draw(); el.querySelector(`.kwi[data-k="${k}"]`).focus(); } } }; inp.onblur = () => { const k = +inp.dataset.k; if (inp.value.trim() && addKw(k, inp.value)) draw(); }; });
+    el.querySelectorAll('textarea[data-f=reply]').forEach(t => t.oninput = () => { const k = +t.dataset.k; rules[k].reply = t.value; el.querySelector(`[data-c="${k}"]`).textContent = t.value.length + ' / 500'; stat(); });
+    el.querySelectorAll('input[data-f=on]').forEach(c => c.onchange = () => { rules[+c.dataset.k].on = c.checked; draw(); });
+    el.querySelector('.ilist').onclick = e => {
+      const t = e.target;
+      if (t.dataset.rm) { const [k, x] = t.dataset.rm.split(':').map(Number); rules[k].keywords.splice(x, 1); return draw(); }
+      if (t.dataset.mv) { const k = +t.dataset.i, d = +t.dataset.mv; [rules[k], rules[k + d]] = [rules[k + d], rules[k]]; return draw(); }
+      if (t.dataset.x !== undefined && confirm('حذف هذه القاعدة؟')) { rules.splice(+t.dataset.x, 1); draw(); }
+    };
+    const sr = $('#sr'); sr.onclick = async () => { const bad = rules.findIndex(r => !r.keywords.length || !r.reply.trim()); if (bad >= 0) return toast('القاعدة ' + (bad + 1) + ' ناقصة'); try { rules = await api('/admin/rules', 'POST', { rules }); saved = JSON.stringify(rules); toast('تم الحفظ'); draw(); } catch (er) { toast(er.message); } };
+    $('#rv').onclick = async () => { rules = JSON.parse(saved); draw(); };
   };
   draw();
 }
