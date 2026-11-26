@@ -16,6 +16,7 @@ async function get(env, k, d) { const v = await env.KV.get(k, 'json'); return v 
 const put = (env, k, v, o) => env.KV.put(k, JSON.stringify(v), o);
 
 async function init(env) {
+  if (await env.KV.get('inited') && await env.KV.get('covers1') !== null && await env.KV.get('pal1') === null) { const c = await get(env, 'cats', []); const pal = { science: '#2E6FBE', nature: '#9DC4D5', history: '#F0B400', tech: '#EF642D', space: '#463C50', body: '#FADA80' }; c.forEach(x => { if (pal[x.id]) x.color = pal[x.id]; }); await put(env, 'cats', c); await env.KV.put('pal1', '1'); }
   if (await env.KV.get('inited') && await env.KV.get('fixdates') !== null && await env.KV.get('covers1') !== null) return;
   if (await env.KV.get('inited') && await env.KV.get('fixdates') !== null) { const it = await get(env, 'items', []); const cv = { 'ep1-airplane-window': '/covers/ep1.jpg', 'ep2-blue-sky': '/covers/ep2.jpg' }; it.forEach(x => { if (cv[x.id] && !x.cover) x.cover = cv[x.id]; }); await put(env, 'items', it); await env.KV.put('covers1', '1'); return; }
   if (await env.KV.get('inited')) { const it = await get(env, 'items', []); const n = Date.now(); it.forEach((x, k) => { if (x.created < 1e12) x.created = n - k * 3600000; }); await put(env, 'items', it); await env.KV.put('fixdates', '1'); return; }

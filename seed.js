@@ -1,10 +1,10 @@
 export const CATS = [
-  { id: 'science', name: 'علوم', color: '#2457D6', icon: '⚗️' },
-  { id: 'nature', name: 'طبيعة', color: '#2E9E5B', icon: '🌿' },
-  { id: 'history', name: 'تاريخ', color: '#C9792B', icon: '🏺' },
-  { id: 'tech', name: 'تقنية', color: '#6A4CE0', icon: '💡' },
-  { id: 'space', name: 'فضاء', color: '#1B1B1F', icon: '🪐' },
-  { id: 'body', name: 'جسم الإنسان', color: '#E8452C', icon: '🫀' },
+  { id: 'science', name: 'علوم', color: '#2E6FBE', icon: '⚗️' },
+  { id: 'nature', name: 'طبيعة', color: '#9DC4D5', icon: '🌿' },
+  { id: 'history', name: 'تاريخ', color: '#F0B400', icon: '🏺' },
+  { id: 'tech', name: 'تقنية', color: '#EF642D', icon: '💡' },
+  { id: 'space', name: 'فضاء', color: '#463C50', icon: '🪐' },
+  { id: 'body', name: 'جسم الإنسان', color: '#FADA80', icon: '🫀' },
 ];
 const I = (id, cat, type, title, summary, body, extra = {}) => ({
   id, cat, type, title, summary, body, tags: [], status: 'published', featured: false,
