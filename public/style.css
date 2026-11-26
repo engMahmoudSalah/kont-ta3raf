@@ -246,3 +246,6 @@ article.post{padding-inline:2px}
 @media(prefers-reduced-motion:reduce){.hq b.pop,.hero-art .big.hop{animation:none}}
 .quiz .mascot{width:96px;height:96px;display:block;margin:0 auto 10px}.quiz button.btn{white-space:normal}
 .gi{width:1.05em;height:1.05em;vertical-align:-.15em;display:inline-block}
+
+.meter{display:flex;align-items:center;gap:12px}
+.meter small{display:block;color:var(--grey);font-weight:700}.meter b{font-size:22px;display:block;line-height:1.2}.meter span{font-size:13px;color:var(--grey)}

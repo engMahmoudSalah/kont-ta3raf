@@ -7,6 +7,7 @@ function pHome() {
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
   <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
+  <section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">${meter()}<div style="flex:1;min-width:220px"><b style="font-size:20px">لعبة اليوم: صدّق أو لا</b><br>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.<p style="margin-top:10px"><a class="btn red sm" href="#/play">العب الآن ←</a></p></div></div></div></section>
   ${forYou(items, cats)}
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>${cats.length} عالماً، وكل واحد فيه ما يستحق أن تعرفه</small></div>
   <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
@@ -58,6 +59,7 @@ async function pItem(id) {
   <h2 style="margin-top:36px">التعليقات</h2><div id="cms">${cm(d.comments)}</div>
   ${u ? `<label class="f">أضف تعليقاً</label><textarea id="ct" maxlength="600"></textarea><p style="margin-top:8px"><button class="btn sm" id="b-cm">أرسل</button></p><div class="err" id="ce"></div>` : '<p class="empty"><a class="btn sm" href="#/login">سجّل الدخول للتعليق</a></p>'}
   ${d.related.length ? `<h2 style="margin-top:36px">قد يعجبك</h2><div class="grid" style="grid-template-columns:1fr">${d.related.map(card).join('')}</div>` : ''}</article></div>`, '');
+  addXp(10, 'v:' + i.id);
   const need = () => { if (!S.user) { toast('سجّل الدخول أولاً'); location.hash = '#/login'; return true; } };
   $('#b-like').onclick = async () => { try { const r = await api(`/items/${i.id}/like`, 'POST'); $('#lk').innerHTML = GI.heart + ' ' + r.likes; } catch (e) { toast(e.message); } };
   $('#b-save').onclick = async () => { if (need()) return; const r = await api('/me/bookmark', 'POST', { id: i.id }); S.user.bookmarks = r.bookmarks; $('#b-save').textContent = r.bookmarks.includes(i.id) ? '★ محفوظ' : '☆ احفظ'; };
