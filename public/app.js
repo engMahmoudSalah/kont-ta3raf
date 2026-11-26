@@ -15,24 +15,21 @@ const fmt = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
 const catOf = id => (S.home.cats.find(c => c.id === id) || { name: '', color: '#1B1B1F', icon: '✦' });
 const date = t => new Date(t).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
 
-function art() {
-  return `<div class="art"><svg viewBox="0 0 420 380" aria-hidden="true">
-  <rect x="40" y="30" width="340" height="320" rx="40" fill="#8CC8F0" stroke="#1B1B1F" stroke-width="9"/>
-  <rect x="62" y="52" width="296" height="276" rx="28" fill="#fff" stroke="#1B1B1F" stroke-width="7"/>
-  <rect x="78" y="68" width="264" height="244" rx="20" fill="#2457D6" stroke="#1B1B1F" stroke-width="6"/>
-  <rect x="78" y="190" width="264" height="52" fill="#8CC8F0"/><rect x="78" y="242" width="264" height="26" fill="#F6EFDF"/>
-  <path d="M78 268H342V292Q342 312 322 312H98Q78 312 78 292Z" fill="#E8452C"/>
-  <g class="sun"><circle cx="270" cy="130" r="30" fill="#FFC93C" stroke="#1B1B1F" stroke-width="6"/>
-  ${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<line x1="270" y1="${130 - 40}" x2="270" y2="${130 - 54}" stroke="#1B1B1F" stroke-width="6" stroke-linecap="round" transform="rotate(${a} 270 130)"/>`).join('')}</g>
-  <g class="cloud"><path d="M110 200q-4-30 24-30 8-22 38-14 22-6 30 20 24 2 22 24z" fill="#fff" stroke="#1B1B1F" stroke-width="6" stroke-linejoin="round"/></g>
-  <circle cx="378" cy="62" r="26" fill="#FFC93C" stroke="#1B1B1F" stroke-width="6"/>
-  <text x="378" y="75" font-size="34" font-weight="900" text-anchor="middle" fill="#1B1B1F" font-family="Cairo,Arial">؟</text>
-  <circle cx="30" cy="330" r="22" fill="#E8452C" stroke="#1B1B1F" stroke-width="6"/>
-  <text x="30" y="342" font-size="32" font-weight="900" text-anchor="middle" fill="#fff" font-family="Cairo,Arial">!</text></svg></div>`;
+function mascot(cls = '') {
+  return `<svg class="mascot ${cls}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#181818"/><g class="eyes"><circle cx="33.2" cy="45" r="14.4" fill="#FBFBF9"/><circle cx="66.8" cy="45" r="14.4" fill="#FBFBF9"/><circle cx="31" cy="45" r="5.3" fill="#181818"/><circle cx="65" cy="45" r="5.3" fill="#181818"/></g><path d="M23 27l20-2.4M57 24.6l20 2.4" stroke="#EF642D" stroke-width="3.4"/><path d="M41.5 67q8.5 8 17 0" fill="none" stroke="#FBFBF9" stroke-width="2.8" stroke-linecap="round"/></svg>`;
 }
+const cloud = cls => `<svg class="${cls}" viewBox="0 0 120 80" aria-hidden="true"><path d="M22 66q-16-2-14-18 2-14 18-14 6-22 32-20 20 2 22 20 22-2 24 18 0 14-18 14z" fill="#FBFBF9" stroke="#181818" stroke-width="5" stroke-linejoin="round"/></svg>`;
+function art() {
+  const rays = [0, 40, 80, 120, 160, 200, 240, 280, 320].map(a => `<line x1="50" y1="6" x2="50" y2="18" stroke="#F0B400" stroke-width="7" stroke-linecap="round" transform="rotate(${a} 50 50)"/>`).join('');
+  return `<div class="hero-art">${cloud('c1')}${cloud('c2')}
+  <svg class="sunb" viewBox="0 0 100 100" aria-hidden="true">${rays}<circle cx="50" cy="50" r="24" fill="#F0B400" stroke="#181818" stroke-width="5"/></svg>
+  ${mascot('big')}
+  <svg class="bang" viewBox="0 0 40 100" aria-hidden="true"><rect x="5" y="3" width="30" height="58" rx="10" fill="#EF642D" stroke="#181818" stroke-width="4"/><circle cx="20" cy="82" r="14" fill="#EF642D" stroke="#181818" stroke-width="4"/></svg></div>`;
+}
+const emptyBox = t => `<div class="empty">${mascot()}${t}</div>`;
 function card(i) {
   const c = catOf(i.cat);
-  return `<a class="card" href="#/item/${esc(i.id)}"><div class="th" style="background:${c.color}22"><em>${esc(c.name)}</em>${c.icon}</div>
+  return `<a class="card" href="#/item/${esc(i.id)}">${i.cover ? `<div class="th cov"><em>${esc(c.name)}</em><img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy"></div>` : `<div class="th" style="background:${c.color}"><em>${esc(c.name)}</em>${mascot()}</div>`}
   <div class="bd"><div class="meta"><span>${TICON[i.type] || ''} ${TYPES[i.type] || ''}</span><span>${i.minutes} د</span><span>👁 ${fmt(i.views)}</span></div>
   <h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`;
 }
@@ -50,7 +47,7 @@ function shell(inner, route) {
   const s = S.home.settings; const u = S.user;
   const link = (h, t) => `<a href="#${h}" class="${route === h ? 'on' : ''}">${t}</a>`;
   $('#app').innerHTML = `${s.announcement ? `<div class="ann">${esc(s.announcement)}</div>` : ''}
-  <header class="top"><div class="wrap"><a class="logo" href="#/"><i>!</i>${esc(s.siteName)}</a>
+  <header class="top"><div class="wrap"><a class="logo" href="#/">${mascot()}${esc(s.siteName)}</a>
   <button class="burger" aria-label="القائمة" onclick="document.querySelector('nav.m').classList.toggle('open')">☰</button>
   <nav class="m" onclick="this.classList.remove('open')">${link('/', 'الرئيسية')}${link('/explore', 'استكشف')}${s.showPlans ? link('/plans', 'الخطط') : ''}${link('/suggest', 'اقترح موضوعاً')}
   ${u ? `${u.role !== 'user' ? link('/admin', 'لوحة التحكم') : ''}${link('/account', 'حسابي')}` : `${link('/login', 'دخول')}<a class="btn sm" href="#/signup">انضم مجاناً</a>`}</nav></div></header>
@@ -66,7 +63,7 @@ function pHome() {
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
   shell(`<section class="hero"><div class="wrap"><div><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
-  <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
+  <div class="say" style="max-width:420px;margin-bottom:18px">${mascot()}<span>أنا ماسكوت القناة. أسأل "كنت تعرف؟" وأجاوب بسرعة.</span></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
   <div class="marq"><div>${cats.map(c => `${c.icon} ${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${c.icon} ${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>ست تصنيفات، وكل واحد فيه ما يستحق أن تعرفه</small></div>
   <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}33">${c.icon}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
@@ -89,7 +86,7 @@ function pExplore(cat) {
     $('#ft').innerHTML = `<span class="chip ${!st.type ? 'on' : ''}" data-t="">كل الأنواع</span>` + Object.entries(TYPES).map(([k, v]) => `<span class="chip ${st.type === k ? 'on' : ''}" data-t="${k}">${v}</span>`).join('');
     const q = st.q.trim().toLowerCase();
     const r = items.filter(i => (!st.cat || i.cat === st.cat) && (!st.type || i.type === st.type) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
-    $('#res').innerHTML = r.length ? r.map(card).join('') : '<div class="empty" style="grid-column:1/-1">لا نتائج. جرّب كلمة أخرى.</div>';
+    $('#res').innerHTML = r.length ? r.map(card).join('') : `<div style="grid-column:1/-1">${emptyBox('لا نتائج. جرّب كلمة أخرى.')}</div>`;
   };
   draw();
   $('#q').oninput = e => { st.q = e.target.value; draw(); };
@@ -97,13 +94,13 @@ function pExplore(cat) {
   $('#ft').onclick = e => { if (e.target.dataset.t !== undefined) { st.type = e.target.dataset.t; draw(); } };
 }
 async function pItem(id) {
-  let d; try { d = await api('/items/' + id); } catch { return shell('<div class="empty">المحتوى غير موجود</div>', ''); }
+  let d; try { d = await api('/items/' + id); } catch { return shell(emptyBox('المحتوى غير موجود'), ''); }
   const i = d.item, c = catOf(i.cat), u = S.user;
   const saved = u && u.bookmarks.includes(i.id), done = u && u.done.includes(i.id);
-  const cm = list => list.length ? list.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}${x.status !== 'ok' ? ' · ' + (x.status === 'pending' ? 'بانتظار المراجعة' : 'مخفي') : ''}</small><div>${esc(x.text)}</div>${x.reply ? `<div class="rp"><b>${x.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(x.reply.text)}</div>` : ''}</div>`).join('') : '<div class="empty">كن أول من يعلّق</div>';
+  const cm = list => list.length ? list.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}${x.status !== 'ok' ? ' · ' + (x.status === 'pending' ? 'بانتظار المراجعة' : 'مخفي') : ''}</small><div>${esc(x.text)}</div>${x.reply ? `<div class="rp"><b>${x.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(x.reply.text)}</div>` : ''}</div>`).join('') : emptyBox('كن أول من يعلّق');
   shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}33">${c.icon} ${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>
   <h1>${esc(i.title)}</h1><div class="meta"><span>${i.minutes} دقائق</span><span>👁 ${fmt(i.views)}</span><span id="lk">❤ ${i.likes}</span><span>${date(i.created)}</span></div>
-  ${i.youtube ? `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.youtube)}" allowfullscreen loading="lazy" title="${esc(i.title)}"></iframe></div>` : ''}
+  ${i.cover && !i.youtube ? `<div class="pcover"><img src="${esc(i.cover)}" alt="${esc(i.title)}"></div>` : ''}${i.youtube ? `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.youtube)}" allowfullscreen loading="lazy" title="${esc(i.title)}"></iframe></div>` : ''}
   <p style="font-weight:900;font-size:20px;margin-top:16px">${esc(i.summary)}</p>${md(i.body)}
   <div class="bar" style="margin-top:24px"><button class="btn red sm" id="b-like">❤ أعجبني</button><button class="btn sm" id="b-save">${saved ? '★ محفوظ' : '☆ احفظ'}</button><button class="btn blue sm" id="b-done">${done ? '✔ تمت القراءة' : 'علّمه كمقروء'}</button>
   <button class="btn w sm" id="b-share">مشاركة</button></div>
@@ -139,7 +136,7 @@ async function pAccount() {
   const pct = items.length ? Math.round(done.length / items.length * 100) : 0;
   shell(`<div class="wrap"><section class="s"><div class="h2">أهلاً ${esc(u.name)}<small>${esc(u.email)} · خطة ${u.plan === 'plus' ? 'بلس' : 'مجانية'}</small></div>
   <div class="kp" style="margin:20px 0"><div><b>${saved.length}</b><span>محفوظ</span></div><div><b>${done.length}</b><span>مقروء</span></div><div><b>${pct}%</b><span>تقدّمك</span></div></div>
-  <div class="h2" style="font-size:24px">المفضلة</div><div class="grid">${saved.map(card).join('') || '<div class="empty" style="grid-column:1/-1">لم تحفظ شيئاً بعد</div>'}</div>
+  <div class="h2" style="font-size:24px">المفضلة</div><div class="grid">${saved.map(card).join('') || `<div style="grid-column:1/-1">${emptyBox('لم تحفظ شيئاً بعد')}</div>`}</div>
   <div class="box" style="margin-top:30px;max-width:460px"><b>الملف الشخصي</b><label class="f">الاسم</label><input id="pn" value="${esc(u.name)}"><label class="f">كلمة مرور جديدة (اختياري)</label><input id="pp" type="password" autocomplete="new-password">
   <p style="margin-top:12px"><button class="btn sm" id="ps">حفظ</button> <button class="btn w sm" id="lo">خروج</button></p></div></section></div>`, '/account');
   $('#ps').onclick = async () => { try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: $('#pn').value, password: $('#pp').value }) }; toast('تم الحفظ'); } catch (e) { toast(e.message); } };
@@ -183,6 +180,7 @@ async function aContent(el, editing) {
     <div><label class="f">الحالة</label><select name="status"><option value="draft" ${i.status === 'draft' ? 'selected' : ''}>مسودة</option><option value="published" ${i.status === 'published' ? 'selected' : ''}>منشور</option></select></div>
     <div><label class="f">مدة القراءة (دقائق)</label><input name="minutes" type="number" min="1" max="60" value="${i.minutes}"></div>
     <div><label class="f">معرّف فيديو يوتيوب</label><input name="youtube" value="${esc(i.youtube)}" dir="ltr" placeholder="مثال: WrFUoCWyVQQ"></div>
+    <div><label class="f">رابط الغلاف (صورة)</label><input name="cover" value="${esc(i.cover)}" dir="ltr" placeholder="/covers/ep1.jpg"></div>
     <div><label class="f">رابط تيك توك</label><input name="tiktok" value="${esc(i.tiktok)}" dir="ltr"></div>
     <div><label class="f">وسوم (بفاصلة)</label><input name="tags" value="${esc((i.tags || []).join('، '))}"></div></div>
     <label class="f">ملخص</label><input name="summary" value="${esc(i.summary)}" maxlength="300">
@@ -206,7 +204,7 @@ async function aComments(el) {
   el.innerHTML = l.length ? l.map(c => `<div class="cm"><b>${esc(c.by)}</b> <small>${esc(c.email)} · ${esc(c.itemTitle)} · <span class="pill ${c.status === 'ok' ? 'g' : c.status === 'pending' ? 'y' : 'r'}">${c.status === 'ok' ? 'ظاهر' : c.status === 'pending' ? 'ينتظر' : 'مخفي'}</span></small><div>${esc(c.text)}</div>
   ${c.reply ? `<div class="rp">${c.reply.auto ? 'ردّ تلقائي: ' : 'ردّك: '}${esc(c.reply.text)}</div>` : ''}
   <div class="bar" style="margin:8px 0 0"><input placeholder="اكتب ردّاً" data-r="${c.id}" style="max-width:260px"><button class="btn sm" data-a="reply" data-i="${c.id}" data-p="${esc(c.item)}">ردّ</button>
-  ${c.status !== 'ok' ? `<button class="btn sm blue" data-a="approve" data-i="${c.id}" data-p="${esc(c.item)}">اعتماد</button>` : `<button class="btn sm w" data-a="hide" data-i="${c.id}" data-p="${esc(c.item)}">إخفاء</button>`}<button class="btn sm danger" data-a="delete" data-i="${c.id}" data-p="${esc(c.item)}">حذف</button></div></div>`).join('') : '<div class="empty">لا تعليقات بعد</div>';
+  ${c.status !== 'ok' ? `<button class="btn sm blue" data-a="approve" data-i="${c.id}" data-p="${esc(c.item)}">اعتماد</button>` : `<button class="btn sm w" data-a="hide" data-i="${c.id}" data-p="${esc(c.item)}">إخفاء</button>`}<button class="btn sm danger" data-a="delete" data-i="${c.id}" data-p="${esc(c.item)}">حذف</button></div></div>`).join('') : emptyBox('لا تعليقات بعد');
   el.onclick = async e => {
     const a = e.target.dataset.a; if (!a) return;
     const text = a === 'reply' ? el.querySelector(`[data-r="${e.target.dataset.i}"]`).value : '';
@@ -261,7 +259,7 @@ async function aSettings(el) {
 }
 async function aIdeas(el) {
   const l = await api('/admin/suggestions');
-  el.innerHTML = l.length ? l.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}</small><div>${esc(x.text)}</div></div>`).join('') : '<div class="empty">لا اقتراحات بعد</div>';
+  el.innerHTML = l.length ? l.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}</small><div>${esc(x.text)}</div></div>`).join('') : emptyBox('لا اقتراحات بعد');
 }
 
 // ---------- router ----------
@@ -282,6 +280,6 @@ async function route() {
     if (a === 'suggest') return pSuggest();
     if (a === 'admin') return pAdmin();
     pHome();
-  } catch (e) { $('#app').innerHTML = `<div class="empty" style="padding:80px">تعذّر التحميل. حاول مرة أخرى.</div>`; }
+  } catch (e) { $('#app').innerHTML = `<div class="loader"><div>${mascot()}<div>تعذّر التحميل، حاول مرة أخرى</div></div></div>`; }
 }
 addEventListener('hashchange', route); route();

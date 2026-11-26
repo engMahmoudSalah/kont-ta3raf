@@ -16,10 +16,11 @@ async function get(env, k, d) { const v = await env.KV.get(k, 'json'); return v 
 const put = (env, k, v, o) => env.KV.put(k, JSON.stringify(v), o);
 
 async function init(env) {
-  if (await env.KV.get('inited') && !(await env.KV.get('fixdates') === null)) return;
+  if (await env.KV.get('inited') && await env.KV.get('fixdates') !== null && await env.KV.get('covers1') !== null) return;
+  if (await env.KV.get('inited') && await env.KV.get('fixdates') !== null) { const it = await get(env, 'items', []); const cv = { 'ep1-airplane-window': '/covers/ep1.jpg', 'ep2-blue-sky': '/covers/ep2.jpg' }; it.forEach(x => { if (cv[x.id] && !x.cover) x.cover = cv[x.id]; }); await put(env, 'items', it); await env.KV.put('covers1', '1'); return; }
   if (await env.KV.get('inited')) { const it = await get(env, 'items', []); const n = Date.now(); it.forEach((x, k) => { if (x.created < 1e12) x.created = n - k * 3600000; }); await put(env, 'items', it); await env.KV.put('fixdates', '1'); return; }
   await put(env, 'items', ITEMS); await put(env, 'rules', RULES); await put(env, 'settings', SETTINGS);
-  await put(env, 'cats', CATS); await env.KV.put('inited', '1'); await env.KV.put('fixdates', '0'); const it = ITEMS.map((x, k) => ({ ...x, created: Date.now() - k * 3600000 })); await put(env, 'items', it);
+  await put(env, 'cats', CATS); await env.KV.put('inited', '1'); await env.KV.put('fixdates', '0'); await env.KV.put('covers1', '1'); const it = ITEMS.map((x, k) => ({ ...x, created: Date.now() - k * 3600000 })); await put(env, 'items', it);
 }
 async function hit(env, key, n = 1) {
   const k = 'stat:' + day(); const s = await get(env, k, {});
@@ -200,7 +201,7 @@ export default {
       if (!cats.find(c => c.id === body.cat)) return err('تصنيف غير صالح');
       if (!clip(body.title, 140).trim()) return err('العنوان مطلوب');
       const yt = clip(body.youtube, 40).replace(/[^\w-]/g, '');
-      const f = { cat: body.cat, type: ['video', 'article', 'guide', 'checklist'].includes(body.type) ? body.type : 'article', title: clip(body.title, 140), summary: clip(body.summary, 300), body: clip(body.body, 20000), tags: (body.tags || []).slice(0, 8).map(t => clip(t, 24)), status: ['published', 'draft'].includes(body.status) ? body.status : 'draft', featured: !!body.featured, minutes: Math.max(1, Math.min(60, +body.minutes || 3)), youtube: yt, tiktok: clip(body.tiktok, 200) };
+      const f = { cat: body.cat, type: ['video', 'article', 'guide', 'checklist'].includes(body.type) ? body.type : 'article', title: clip(body.title, 140), summary: clip(body.summary, 300), body: clip(body.body, 20000), tags: (body.tags || []).slice(0, 8).map(t => clip(t, 24)), status: ['published', 'draft'].includes(body.status) ? body.status : 'draft', featured: !!body.featured, minutes: Math.max(1, Math.min(60, +body.minutes || 3)), youtube: yt, tiktok: clip(body.tiktok, 200), cover: /^(\/[\w\/.-]+|https:\/\/[^\s"'<>]+)$/.test(String(body.cover || '')) ? clip(body.cover, 300) : '' };
       if (it) Object.assign(it, f); else { it = { id: id || rid(5), views: 0, likes: 0, created: Date.now(), ...f }; items.unshift(it); }
       await put(env, 'items', items); await log(env, u.email, 'حفظ محتوى: ' + it.title); return J(it);
     }
