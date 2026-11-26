@@ -30,7 +30,7 @@ const emptyBox = t => `<div class="empty">${mascot()}${t}</div>`;
 function card(i) {
   const c = catOf(i.cat);
   return `<a class="card" href="#/item/${esc(i.id)}">${i.cover ? `<div class="th cov"><em>${esc(c.name)}</em><img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy"></div>` : `<div class="th" style="background:${c.color}"><em>${esc(c.name)}</em>${mascot()}</div>`}
-  <div class="bd"><div class="meta"><span>${TICON[i.type] || ''} ${TYPES[i.type] || ''}</span><span>${i.minutes} د</span><span>👁 ${fmt(i.views)}</span></div>
+  <div class="bd"><div class="meta">${i.ep ? `<span class="pill y">حلقة ${i.ep}</span>` : ''}${i.publishAt > Date.now() ? '<span class="pill r">مجدول</span>' : ''}<span>${TICON[i.type] || ''} ${TYPES[i.type] || ''}</span><span>${i.minutes} د</span><span>👁 ${fmt(i.views)}</span></div>
   <h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`;
 }
 function md(t) {
@@ -49,7 +49,7 @@ function shell(inner, route) {
   $('#app').innerHTML = `${s.announcement ? `<div class="ann">${esc(s.announcement)}</div>` : ''}
   <header class="top"><div class="wrap"><a class="logo" href="#/">${mascot()}${esc(s.siteName)}</a>
   <button class="burger" aria-label="القائمة" onclick="document.querySelector('nav.m').classList.toggle('open')">☰</button>
-  <nav class="m" onclick="this.classList.remove('open')">${link('/', 'الرئيسية')}${link('/explore', 'استكشف')}${s.showPlans ? link('/plans', 'الخطط') : ''}${link('/suggest', 'اقترح موضوعاً')}
+  <nav class="m" onclick="this.classList.remove('open')">${link('/', 'الرئيسية')}${link('/episodes', 'الحلقات')}${link('/explore', 'استكشف')}${s.showPlans ? link('/plans', 'الخطط') : ''}${link('/suggest', 'اقترح موضوعاً')}
   ${u ? `${u.role !== 'user' ? link('/admin', 'لوحة التحكم') : ''}${link('/account', 'حسابي')}` : `${link('/login', 'دخول')}<a class="btn sm" href="#/signup">انضم مجاناً</a>`}</nav></div></header>
   <main>${inner}</main>
   <footer><div class="wrap"><div><b style="font-size:20px">${esc(s.siteName)}</b><br>معلومة قصيرة كل يوم، مصنّفة ومراجعة.</div>
@@ -76,6 +76,12 @@ function pHome() {
   <div><b class="n">3</b><b>شارك وناقش</b><br>علّق واقترح موضوع الحلقة القادمة.</div></div></div></section>
   <section class="s" style="padding-top:0"><div class="wrap"><div class="cta-band"><h2>جاهز تعرف أكثر؟</h2><a class="btn" href="#/signup">انضم مجاناً</a></div></div></section>`, '/');
 }
+function pEpisodes() {
+  const eps = S.home.items.filter(i => i.ep).sort((a, b) => b.ep - a.ep);
+  shell(`<section class="s"><div class="wrap"><div class="h2">الحلقات<small>حلقة جديدة كل يوم، من الأحدث إلى الأقدم</small></div>
+  <div class="grid" style="grid-template-columns:1fr;max-width:760px">${eps.map(i => `<a class="card" href="#/item/${esc(i.id)}" style="flex-direction:row;align-items:stretch"><div style="flex:0 0 46%;position:relative;border-inline-end:var(--b);background:var(--ink)">${i.cover ? `<img src="${esc(i.cover)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">` : mascot()}</div>
+  <div class="bd"><div class="meta"><span class="pill y">حلقة ${i.ep}</span><span>${esc(catOf(i.cat).name)}</span><span>${i.minutes} د</span></div><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`).join('') || emptyBox('الحلقات قريباً')}</div></div></section>`, '/episodes');
+}
 function pExplore(cat) {
   const { cats, items } = S.home; const st = { cat: cat || '', type: '', q: '' };
   shell(`<section class="s"><div class="wrap"><div class="h2">استكشف</div>
@@ -98,10 +104,10 @@ async function pItem(id) {
   const i = d.item, c = catOf(i.cat), u = S.user;
   const saved = u && u.bookmarks.includes(i.id), done = u && u.done.includes(i.id);
   const cm = list => list.length ? list.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}${x.status !== 'ok' ? ' · ' + (x.status === 'pending' ? 'بانتظار المراجعة' : 'مخفي') : ''}</small><div>${esc(x.text)}</div>${x.reply ? `<div class="rp"><b>${x.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(x.reply.text)}</div>` : ''}</div>`).join('') : emptyBox('كن أول من يعلّق');
-  shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}33">${c.icon} ${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>
+  shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}33">${c.icon} ${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>${i.ep ? ` <span class="chip" style="background:var(--yellow)">الحلقة ${i.ep}</span>` : ''}
   <h1>${esc(i.title)}</h1><div class="meta"><span>${i.minutes} دقائق</span><span>👁 ${fmt(i.views)}</span><span id="lk">❤ ${i.likes}</span><span>${date(i.created)}</span></div>
   ${i.cover && !i.youtube ? `<div class="pcover"><img src="${esc(i.cover)}" alt="${esc(i.title)}"></div>` : ''}${i.youtube ? `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.youtube)}" allowfullscreen loading="lazy" title="${esc(i.title)}"></iframe></div>` : ''}
-  <p style="font-weight:900;font-size:20px;margin-top:16px">${esc(i.summary)}</p>${md(i.body)}
+  <p style="font-weight:900;font-size:20px;margin-top:16px">${esc(i.summary)}</p>${md(i.body)}${i.short ? `<h2>النسخة القصيرة (Short)</h2><div class="vid" style="aspect-ratio:9/16;max-width:320px"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.short)}" allowfullscreen loading="lazy" title="Short"></iframe></div>` : ''}${i.credit ? `<p style="font-size:14px;color:var(--grey)">${esc(i.credit)}</p>` : ''}${(d.prev || d.next) ? `<div class="bar" style="justify-content:space-between">${d.next ? `<a class="btn sm w" href="#/item/${esc(d.next.id)}">الحلقة ${d.next.ep} ←</a>` : '<span></span>'}${d.prev ? `<a class="btn sm w" href="#/item/${esc(d.prev.id)}">→ الحلقة ${d.prev.ep}</a>` : ''}</div>` : ''}
   <div class="bar" style="margin-top:24px"><button class="btn red sm" id="b-like">❤ أعجبني</button><button class="btn sm" id="b-save">${saved ? '★ محفوظ' : '☆ احفظ'}</button><button class="btn blue sm" id="b-done">${done ? '✔ تمت القراءة' : 'علّمه كمقروء'}</button>
   <button class="btn w sm" id="b-share">مشاركة</button></div>
   ${i.tiktok ? `<p><a class="chip" href="${esc(i.tiktok)}" target="_blank" rel="noopener">شاهده على تيك توك</a></p>` : ''}
@@ -180,6 +186,10 @@ async function aContent(el, editing) {
     <div><label class="f">الحالة</label><select name="status"><option value="draft" ${i.status === 'draft' ? 'selected' : ''}>مسودة</option><option value="published" ${i.status === 'published' ? 'selected' : ''}>منشور</option></select></div>
     <div><label class="f">مدة القراءة (دقائق)</label><input name="minutes" type="number" min="1" max="60" value="${i.minutes}"></div>
     <div><label class="f">معرّف فيديو يوتيوب</label><input name="youtube" value="${esc(i.youtube)}" dir="ltr" placeholder="مثال: WrFUoCWyVQQ"></div>
+    <div><label class="f">رقم الحلقة (اختياري)</label><input name="ep" type="number" min="0" value="${i.ep || ''}"></div>
+    <div><label class="f">معرّف Short على يوتيوب</label><input name="short" value="${esc(i.short)}" dir="ltr"></div>
+    <div><label class="f">النشر المجدول (بتوقيت القاهرة، فارغ = فوراً)</label><input name="publishAt" type="datetime-local" value="${i.publishAt ? new Date(i.publishAt + 7200000).toISOString().slice(0, 16) : ''}"></div>
+    <div><label class="f">سطر الحقوق</label><input name="credit" value="${esc(i.credit)}"></div>
     <div><label class="f">رابط الغلاف (صورة)</label><input name="cover" value="${esc(i.cover)}" dir="ltr" placeholder="/covers/ep1.jpg"></div>
     <div><label class="f">رابط تيك توك</label><input name="tiktok" value="${esc(i.tiktok)}" dir="ltr"></div>
     <div><label class="f">وسوم (بفاصلة)</label><input name="tags" value="${esc((i.tags || []).join('، '))}"></div></div>
@@ -188,7 +198,7 @@ async function aContent(el, editing) {
     <div class="sw"><input type="checkbox" name="featured" ${i.featured ? 'checked' : ''}> مختار في الرئيسية</div>
     <p><button class="btn red sm">حفظ</button> <button type="button" class="btn w sm" id="cx">إلغاء</button></p><div class="err" id="cer"></div></form></div>`;
     $('#cx').onclick = () => aContent(el);
-    $('#cf').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const b = Object.fromEntries(f); b.featured = f.has('featured'); b.tags = String(b.tags).split(/[,،]/).map(x => x.trim()).filter(Boolean); if (i.id) b.id = i.id; try { await api('/admin/items', 'POST', b); S.home = await api('/home'); toast('تم الحفظ'); aContent(el); } catch (x) { $('#cer').textContent = x.message; } };
+    $('#cf').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const b = Object.fromEntries(f); b.featured = f.has('featured'); b.publishAt = b.publishAt ? Date.parse(b.publishAt + ':00+02:00') : 0; b.tags = String(b.tags).split(/[,،]/).map(x => x.trim()).filter(Boolean); if (i.id) b.id = i.id; try { await api('/admin/items', 'POST', b); S.home = await api('/home'); toast('تم الحفظ'); aContent(el); } catch (x) { $('#cer').textContent = x.message; } };
     return;
   }
   el.innerHTML = `<p><button class="btn sm" id="nw">+ محتوى جديد</button></p><div class="tw" style="margin-top:12px"><table class="tbl"><tr><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>👁</th><th></th></tr>
@@ -271,6 +281,7 @@ async function route() {
     document.title = S.home.settings.siteName;
     if (h === '/') return pHome();
     if (a === 'explore') return pExplore(b);
+    if (a === 'episodes') return pEpisodes();
     if (a === 'item') return pItem(b);
     if (a === 'login') return pAuth('login');
     if (a === 'signup') return pAuth('signup');

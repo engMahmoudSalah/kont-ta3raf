@@ -40,11 +40,26 @@ async function me(req, env) {
 }
 const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done });
 const isStaff = u => u && (u.role === 'admin' || u.role === 'editor');
+const live = (i, n = Date.now()) => i.status === 'published' && (!i.publishAt || i.publishAt <= n);
 const slim = i => { const { body, ...r } = i; return r; };
 
 async function rate(env, ip, name, max, ttl = 900) {
   const k = `rl:${name}:${ip}`; const n = Number(await env.KV.get(k) || 0);
   if (n >= max) return false; await env.KV.put(k, String(n + 1), { expirationTtl: ttl }); return true;
+}
+
+
+async function saveItem(env, u, body) {
+  const items = await get(env, 'items', []); const cats = await get(env, 'cats', []);
+  const id = clip(body.id, 60).replace(/[^\w-]/g, ''); let it = id && items.find(i => i.id === id);
+  if (!cats.find(c => c.id === body.cat)) return err('تصنيف غير صالح');
+  if (!clip(body.title, 140).trim()) return err('العنوان مطلوب');
+  const ytid = v => clip(v, 40).replace(/[^\w-]/g, '');
+  const url = v => /^(\/[\w\/.-]+|https:\/\/[^\s"'<>]+)$/.test(String(v || '')) ? clip(v, 300) : '';
+  const pa = Number(body.publishAt) || 0;
+  const f = { cat: body.cat, type: ['video', 'article', 'guide', 'checklist'].includes(body.type) ? body.type : 'article', title: clip(body.title, 140), summary: clip(body.summary, 300), body: clip(body.body, 20000), tags: (body.tags || []).slice(0, 8).map(t => clip(t, 24)), status: ['published', 'draft'].includes(body.status) ? body.status : 'draft', featured: !!body.featured, minutes: Math.max(1, Math.min(60, +body.minutes || 3)), youtube: ytid(body.youtube), short: ytid(body.short), tiktok: url(body.tiktok), cover: url(body.cover), ep: Math.max(0, Math.min(9999, parseInt(body.ep) || 0)), credit: clip(body.credit, 200), publishAt: pa > 1e12 && pa < 4e12 ? pa : 0 };
+  if (it) Object.assign(it, f); else { it = { id: id || rid(5), views: 0, likes: 0, created: Date.now(), ...f }; items.unshift(it); }
+  await put(env, 'items', items); await log(env, u ? u.email : 'publish-api', 'حفظ محتوى: ' + it.title); return J(it);
 }
 
 export default {
@@ -60,24 +75,25 @@ export default {
     // ---------- public ----------
     if (p === '/api/home' && m === 'GET') {
       const [items, settings, cats] = await Promise.all([get(env, 'items', []), get(env, 'settings', {}), get(env, 'cats', [])]);
-      const pubItems = items.filter(i => i.status === 'published');
+      const pubItems = items.filter(i => live(i));
       hit(env, 'home');
       return J({ settings, cats: cats.map(c => ({ ...c, count: pubItems.filter(i => i.cat === c.id).length })), items: pubItems.map(slim) });
     }
     if (p === '/api/items' && m === 'GET') {
-      const items = (await get(env, 'items', [])).filter(i => i.status === 'published');
+      const items = (await get(env, 'items', [])).filter(i => live(i));
       return J(items.map(slim));
     }
     let mm;
     if ((mm = p.match(/^\/api\/items\/([\w-]+)$/)) && m === 'GET') {
       const items = await get(env, 'items', []); const it = items.find(i => i.id === mm[1]);
-      if (!it || (it.status !== 'published' && !isStaff(u))) return err('not found', 404);
-      if (it.status === 'published' && await rate(env, ip + mm[1], 'view', 1, 1800)) {
+      if (!it || (!live(it) && !isStaff(u))) return err('not found', 404);
+      if (live(it) && await rate(env, ip + mm[1], 'view', 1, 1800)) {
         it.views++; await put(env, 'items', items); hit(env, 'views'); hit(env, 'v:' + it.id);
       }
       const comments = (await get(env, 'comments:' + it.id, [])).filter(c => c.status === 'ok' || isStaff(u));
-      const related = items.filter(i => i.cat === it.cat && i.id !== it.id && i.status === 'published').slice(0, 3).map(slim);
-      return J({ item: it, comments, related });
+      const related = items.filter(i => i.cat === it.cat && i.id !== it.id && live(i)).slice(0, 3).map(slim);
+      const eps = items.filter(i => i.ep && live(i)).sort((a, b) => a.ep - b.ep); const k = eps.findIndex(i => i.id === it.id);
+      return J({ item: it, comments, related, prev: k > 0 ? slim(eps[k - 1]) : null, next: k >= 0 && k < eps.length - 1 ? slim(eps[k + 1]) : null });
     }
     if ((mm = p.match(/^\/api\/items\/([\w-]+)\/like$/)) && m === 'POST') {
       if (!await rate(env, ip + mm[1], 'like', 1, 86400)) return err('تم تسجيل إعجابك من قبل', 429);
@@ -104,6 +120,13 @@ export default {
       const text = clip(body.text, 500).trim(); if (text.length < 4) return err('اكتب اقتراحك');
       const l = await get(env, 'suggestions', []); l.unshift({ id: rid(6), text, by: u ? u.name : 'زائر', t: Date.now() });
       await put(env, 'suggestions', l.slice(0, 200)); hit(env, 'suggestions'); return J({ ok: true });
+    }
+
+    if (p === '/api/publish' && m === 'POST') {
+      const k = req.headers.get('x-publish-key') || '';
+      if (!env.PUBLISH_KEY || k.length < 20 || k !== env.PUBLISH_KEY) { await rate(env, ip, 'pkfail', 20, 3600); return err('forbidden', 403); }
+      if (!await rate(env, ip, 'pk', 60, 3600)) return err('محاولات كثيرة', 429);
+      return saveItem(env, null, body);
     }
 
     // ---------- auth ----------
@@ -197,6 +220,9 @@ export default {
     }
     if (p === '/api/admin/items' && m === 'GET') return J((await get(env, 'items', [])).map(slim));
     if (p === '/api/admin/items' && m === 'POST') {
+      return saveItem(env, u, body);
+    }
+    if (false) {
       const items = await get(env, 'items', []); const cats = await get(env, 'cats', []);
       let id = clip(body.id, 60).replace(/[^\w-]/g, ''); let it = id && items.find(i => i.id === id);
       if (!cats.find(c => c.id === body.cat)) return err('تصنيف غير صالح');
