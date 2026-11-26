@@ -1,5 +1,9 @@
 // public pages
 // ---------- pages ----------
+
+function thumb(i) { const c = catOf(i.cat); return i.cover ? `<img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy">` : `<span class="mth" style="background:${c.color}">${mascot()}</span>`; }
+function poster(i, cls) { const c = catOf(i.cat); return `<a class="pst ${cls}" href="#/item/${esc(i.id)}"><div class="pim">${thumb(i)}<em>${esc(c.name)}</em></div><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></a>`; }
+function lrow(i, n) { const c = catOf(i.cat); return `<a class="lr" style="--k:${n % 3}" href="#/item/${esc(i.id)}"><b class="num">${String(n + 1).padStart(2, '0')}</b><span class="lt"><small style="--cc:${c.color}">${esc(c.name)} · ${i.minutes} د</small><h3>${esc(i.title)}</h3></span><span class="lth">${thumb(i)}</span></a>`; }
 function pHome() {
   const { settings: s, cats, items } = S.home; const feat = items.filter(i => i.featured).slice(0, 2);
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
@@ -16,19 +20,18 @@ function pHome() {
   <p class="sub">${esc(s.heroSub)}</p>
   <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/play">العب صدّق أو لا</a>${lat ? `<a class="btn y" href="#/item/${lat.id}">أحدث حلقة ▸</a>` : ''}</div></div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
-  <section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">${meter()}<div style="flex:1;min-width:220px"><b style="font-size:20px">لعبة اليوم: صدّق أو لا</b><br>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.<p style="margin-top:10px"><a class="btn red sm" href="#/play">العب الآن ←</a></p></div></div></div></section>
+  <section class="s"><div class="wrap"><div class="stk"><i class="tape"></i>${meter()}<div class="stx"><b>لعبة اليوم: صدّق أو لا</b><span>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.</span><a class="btn red sm" href="#/play">العب الآن ←</a></div></div></div></section>
   ${newsBand(items)}
   ${forYou(items, cats)}
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>${cats.length} عالماً، وكل واحد فيه ما يستحق أن تعرفه</small></div>
-  <div class="cats">${orderCats(cats).map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
-  ${feat.length ? `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مختارات<small>ابدأ من هنا</small></div><div class="feat" style="margin-top:22px">${feat.map(card).join('')}</div></div></section>` : ''}
-  <section class="s" style="padding-top:0"><div class="wrap"><div class="h2">الأحدث</div><div class="grid">${latest.map(card).join('')}</div>
+  <div class="cloud">${orderCats(cats).map((c, n) => `<a class="cl${DARKC.has(c.id) ? " dk" : ""} s${[2, 0, 1, 0, 2, 1, 0, 1, 2, 0, 1][n % 11]}" style="--bg:${c.color};--r:${[-3, 2, -1.5, 3, -2, 1.5, -3.5, 2.5, -1, 3, -2.5][n % 11]}deg" href="#/explore/${c.id}"><i>${cicon(c.id, 26)}</i><b>${esc(c.name)}</b><small>${c.count}</small></a>`).join('')}</div></div></div></section>
+  ${feat.length ? `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مختارات<small>ابدأ من هنا</small></div><div class="pins">${feat.map((f, n) => poster(f, n ? 'p2' : 'p1')).join('')}</div></div></section>` : ''}
+  <section class="s" style="padding-top:0"><div class="wrap"><div class="h2">الأحدث</div><div class="lst">${latest.slice(0, 1).map(f => poster(f, 'big')).join('')}<div class="lrs">${latest.slice(1).map((f, n) => lrow(f, n + 1)).join('')}</div></div>
   <p style="text-align:center;margin-top:24px"><a class="btn" href="#/explore">كل المحتوى</a></p></div></section>
-  <section class="s"><div class="wrap"><div class="h2">كيف يعمل؟</div><div class="how">
-  <div><b class="n">1</b><b>تصفّح</b><br>محتوى مصنّف حسب الموضوع والنوع.</div>
-  <div><b class="n">2</b><b>احفظ وتابع</b><br>أضف للمفضلة وعلّم ما أنهيته.</div>
-  <div><b class="n">3</b><b>شارك وناقش</b><br>علّق واقترح موضوع الحلقة القادمة.</div></div></div></section>
-  <section class="s" style="padding-top:0"><div class="wrap"><div class="cta-band"><h2>جاهز تعرف أكثر؟</h2><a class="btn" href="#/signup">انضم مجاناً</a></div></div></section>`, '/');
+  <section class="s"><div class="wrap"><div class="h2">كيف يعمل؟</div><div class="path"><div class="st" style="--o:0"><b class="n">1</b><h3>تصفّح</h3><p>محتوى مصنّف حسب الموضوع والنوع.</p></div>
+  <div class="st" style="--o:1"><b class="n">2</b><h3>احفظ وتابع</h3><p>أضف للمفضلة وعلّم ما أنهيته.</p></div>
+  <div class="st" style="--o:2"><b class="n">3</b><h3>شارك وناقش</h3><p>علّق واقترح موضوع الحلقة القادمة.</p></div></div></div></div></section>
+  <section class="s" style="padding-top:0"><div class="wrap"><div class="band"><div class="tapeline" aria-hidden="true"><span>كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر</span></div><h2>جاهز تعرف أكثر؟</h2><a class="btn" href="#/signup">انضم مجاناً</a></div></div></section>`, '/');
   initHero(items);
 }
 function pEpisodes() {
@@ -177,6 +180,6 @@ function orderCats(cats) { const t = persona(); if (!t) return cats; const o = P
 function newsBand(items) {
   const L = [...items].filter(i => i.created <= Date.now()).sort((a, b) => b.created - a.created).slice(0, 4);
   const f = FACTS[Math.floor(Date.now() / 864e5) % FACTS.length];
-  const cards = [...L.map(i => `<a class="nw" href="#/item/${i.id}"><small>جديد</small><b>${esc(i.title)}</b></a>`), `<a class="nw alt" href="#/play"><small>خبر اليوم</small><b>${esc(f[0])}</b><span>صح أم خرافة؟ تعال اكتشف</span></a>`];
-  return `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2"><span class="live">عاجل من ماسكوت</span><small>آخر ما وصل إلى كنت تعرف</small></div><div class="news">${cards.join('')}</div></div></section>`;
+  const rows = [...L.map((i, n) => `<a class="hl h${n}" href="#/item/${i.id}"><i></i><b>${esc(i.title)}</b></a>`), `<a class="hl alt" href="#/play"><i></i><b>${esc(f[0])}</b><small>صح أم خرافة؟ تعال اكتشف ←</small></a>`];
+  return `<section class="s"><div class="wrap"><div class="h2"><span class="live">عاجل من ماسكوت</span><small>آخر ما وصل إلى كنت تعرف</small></div><div class="hls">${rows.join('')}</div></div></section>`;
 }
