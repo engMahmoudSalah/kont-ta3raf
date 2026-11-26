@@ -527,5 +527,7 @@ footer{border-top:var(--b);margin-top:0}
 .intro{position:relative;z-index:6;padding:6px 0 18px}
 .intro .sc-bot{position:static;margin:0 auto!important;padding:18px 16px 8px;color:var(--ink);max-width:640px}
 .scene{height:calc(100svh - 150px);min-height:480px;max-height:760px}
-@media(max-width:700px){.scene{height:calc(100svh - 190px);min-height:440px;max-height:none}.intro .sc-bot{margin-top:0!important;padding-top:6px}}
+@media(max-width:700px){.scene{height:calc(74svh + 300px);min-height:0;max-height:none}.intro{margin-top:-300px;padding:0 0 18px}.intro .sc-bot{padding:0 16px 22px}}
 @media(max-width:700px){.pl-o .orb{margin-top:40px}.pl-m .hero-art{margin-top:30%}}
+@media(min-width:701px){.pl-o .orb{margin-top:28px}.pl-o .orb:nth-child(11){display:none}}
+@media(min-width:1400px){.pl-o .orb:nth-child(10){display:none}}
