@@ -42,21 +42,34 @@ function pEpisodes() {
   <div class="bd"><div class="meta"><span class="pill y">حلقة ${i.ep}</span><span>${esc(catOf(i.cat).name)}</span><span>${i.minutes} د</span></div><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`).join('') || emptyBox('الحلقات قريباً')}</div></div></section>`, '/episodes');
 }
 function pExplore(cat) {
-  const { cats, items } = S.home; const st = { cat: cat || '', type: '', q: '' };
+  const { cats, items } = S.home; cat = String(cat || (window.HQ && HQ.get('cat')) || '');
+  const st = { cat: cats.some(c => c.id === cat) ? cat : '', type: '', q: '', sort: 'new' };
+  const SORTS = { new: 'الأحدث', old: 'الأقدم', views: 'الأكثر مشاهدة', short: 'الأقصر وقتاً' };
   shell(`<section class="s"><div class="wrap"><div class="h2">استكشف</div>
-  <div class="bar"><input id="q" placeholder="ابحث عن معلومة..." style="max-width:320px"></div>
-  <div class="bar" id="fc"></div><div class="bar" id="ft"></div><div class="grid" id="res"></div></div></section>`, '/explore');
+  <div class="bar"><input id="q" type="search" placeholder="ابحث عن معلومة..." aria-label="بحث" style="max-width:320px"></div>
+  <div class="bar" id="fc" role="group" aria-label="التصنيف"></div><div class="bar" id="ft" role="group" aria-label="النوع"></div>
+  <div class="bar xbar"><small id="xn" aria-live="polite"></small><select id="xs" aria-label="الترتيب">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><button class="btn sm" id="xc" type="button" hidden>مسح الفلاتر</button></div>
+  <div class="grid" id="res"></div></div></section>`, '/explore');
+  const chip = (on, a, v, t) => `<span class="chip ${on ? 'on' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-${a}="${v}">${t}</span>`;
   const draw = () => {
-    $('#fc').innerHTML = `<span class="chip ${!st.cat ? 'on' : ''}" data-c="">الكل</span>` + cats.map(c => `<span class="chip ${st.cat === c.id ? 'on' : ''}" data-c="${c.id}">${esc(c.name)}</span>`).join('');
-    $('#ft').innerHTML = `<span class="chip ${!st.type ? 'on' : ''}" data-t="">كل الأنواع</span>` + Object.entries(TYPES).map(([k, v]) => `<span class="chip ${st.type === k ? 'on' : ''}" data-t="${k}">${v}</span>`).join('');
+    $('#fc').innerHTML = chip(!st.cat, 'c', '', 'الكل') + cats.map(c => chip(st.cat === c.id, 'c', c.id, esc(c.name))).join('');
+    $('#ft').innerHTML = chip(!st.type, 't', '', 'كل الأنواع') + Object.entries(TYPES).map(([k, v]) => chip(st.type === k, 't', k, v)).join('');
     const q = st.q.trim().toLowerCase();
     const r = items.filter(i => (!st.cat || i.cat === st.cat) && (!st.type || i.type === st.type) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
-    $('#res').innerHTML = r.length ? r.map(card).join('') : `<div style="grid-column:1/-1">${emptyBox('لا نتائج. جرّب كلمة أخرى.')}</div>`;
+    const by = { new: (a, b) => (b.publishAt || 0) - (a.publishAt || 0), old: (a, b) => (a.publishAt || 0) - (b.publishAt || 0), views: (a, b) => (b.views || 0) - (a.views || 0), short: (a, b) => (a.minutes || 0) - (b.minutes || 0) };
+    r.sort(by[st.sort]);
+    const dirty = st.cat || st.type || q;
+    $('#xn').textContent = r.length ? `${fmt(r.length)} نتيجة` : '';
+    $('#xc').hidden = !dirty;
+    $('#res').innerHTML = r.length ? r.map(card).join('') : `<div style="grid-column:1/-1">${emptyBox('لا نتائج. جرّب كلمة أخرى أو امسح الفلاتر.')}</div>`;
+    try { history.replaceState(null, '', '#/explore' + (st.cat ? '/' + st.cat : '')); } catch (e) {}
   };
-  draw();
+  draw(); $('#fc').scrollLeft = 0;
   $('#q').oninput = e => { st.q = e.target.value; draw(); };
-  $('#fc').onclick = e => { if (e.target.dataset.c !== undefined) { st.cat = e.target.dataset.c; draw(); } };
-  $('#ft').onclick = e => { if (e.target.dataset.t !== undefined) { st.type = e.target.dataset.t; draw(); } };
+  $('#xs').onchange = e => { st.sort = e.target.value; draw(); };
+  $('#xc').onclick = () => { st.cat = ''; st.type = ''; st.q = ''; $('#q').value = ''; draw(); };
+  const pick = e => { const t = e.target.closest('.chip'); if (!t) return; if (t.dataset.c !== undefined) st.cat = t.dataset.c; else if (t.dataset.t !== undefined) st.type = t.dataset.t; else return; draw(); const on = document.querySelector('#' + (t.dataset.c !== undefined ? 'fc' : 'ft') + ' .on'); if (on) on.focus({ preventScroll: true }); };
+  ['#fc', '#ft'].forEach(id => { $(id).onclick = pick; $(id).onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e); } }; });
 }
 async function pItem(id) {
   let d; try { d = await api('/items/' + id); } catch { return shell(emptyBox('المحتوى غير موجود'), ''); }

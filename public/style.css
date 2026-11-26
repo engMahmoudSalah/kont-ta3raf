@@ -530,3 +530,9 @@ footer{border-top:var(--b);margin-top:0}
 @media(max-width:700px){.pl-o .orb{margin-top:40px}.pl-m .hero-art{margin-top:30%}}
 /* v47 overflow guard only, no size changes */
 main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
+/* v49 explore toolbar */
+.xbar{align-items:center;justify-content:space-between;gap:10px}
+.xbar small{color:var(--grey);font-weight:700;margin-inline-end:auto}
+.xbar select{width:auto;flex:none;max-width:60%;font:inherit;font-weight:700;border:var(--b);border-radius:var(--r-s,10px);background:#fff;padding:5px 8px}
+.xbar [hidden]{display:none}
+.chip:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
