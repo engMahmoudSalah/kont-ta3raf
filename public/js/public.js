@@ -17,7 +17,7 @@ function pHome() {
   <div class="pl pl-m" style="--d:.5"><div class="hero-art">${mascot('big')}</div></div>
   <div class="pl pl-f" style="--d:1.1" aria-hidden="true">${cloud('fc1')}${cloud('fc2')}${cloud('fc3')}</div>
   <div class="sc-bot"><div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div>
-  <p class="sub">${esc(s.heroSub)}</p>
+  <p class="sub">${persona() && PERSONAS[persona()] ? esc(PERSONAS[persona()].line) : esc(s.heroSub)}</p>${persona() && PERSONAS[persona()] ? `<span class="chip" style="background:${PERSONAS[persona()].color};color:#fff;margin-top:8px;display:inline-block">أهلاً يا ${PERSONAS[persona()].name}</span>` : ''}
   <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/play">العب صدّق أو لا</a>${lat ? `<a class="btn y" href="#/item/${lat.id}">أحدث حلقة ▸</a>` : ''}</div></div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s"><div class="wrap"><div class="stk"><i class="tape"></i>${meter()}<div class="stx"><b>لعبة اليوم: صدّق أو لا</b><span>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.</span><a class="btn red sm" href="#/play">العب الآن ←</a></div></div></div></section>
