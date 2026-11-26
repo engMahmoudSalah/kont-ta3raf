@@ -134,7 +134,7 @@ export default {
       if (!await rate(env, ip, 'setup', 5, 3600)) return err('محاولات كثيرة', 429);
       const ul = await get(env, 'users', []);
       for (const e of ul) { const x = await get(env, 'user:' + e, null); if (x && x.role === 'admin') return err('الأدمن موجود بالفعل', 403); }
-      if (!env.ADMIN_SETUP_KEY || body.key !== env.ADMIN_SETUP_KEY) return err('مفتاح غير صحيح', 403);
+      if (!env.ADMIN_SETUP_KEY || String(body.key || "").trim() !== String(env.ADMIN_SETUP_KEY).trim()) return err('مفتاح غير صحيح', 403);
       const email = clip(body.email, 120).toLowerCase().trim(); const pw = String(body.password || '');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || pw.length < 10) return err('بريد صالح وكلمة مرور 10 أحرف على الأقل');
       const salt = rid(8);
