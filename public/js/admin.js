@@ -9,6 +9,7 @@ async function pAdmin(sub) {
   const cur = ADMIN_TABS.find(t => t[0] === tab);
   shell(`<div class="adm"><nav class="adm-nav" aria-label="لوحة التحكم">${ADMIN_TABS.map(([k, v, d]) => `<a href="#/admin/${k}" class="${tab === k ? 'on' : ''}" ${tab === k ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg><span>${v}</span></a>`).join('')}</nav>
   <div class="adm-main"><div class="adm-head"><h1>${cur[1]}</h1><span class="pill y">${esc(S.user.name)} · ${S.user.role === 'admin' ? 'أدمن' : 'محرر'}</span></div><div id="ad"><div class="empty">${mascot()}جارٍ التحميل...</div></div></div></div>`, '/admin', { admin: true });
+  { const on = document.querySelector('.adm-nav a.on'), nv = on && on.parentElement; if (nv && nv.scrollWidth > nv.clientWidth) nv.scrollLeft += on.getBoundingClientRect().left + on.offsetWidth / 2 - (nv.getBoundingClientRect().left + nv.clientWidth / 2); }
   const el = $('#ad'); try { await ({ dash: aDash, content: aContent, comments: aComments, rules: aRules, users: aUsers, connect: aConnect, settings: aSettings, ideas: aIdeas }[tab])(el); labelTables(el); new MutationObserver(() => labelTables(el)).observe(el, { childList: true }); }
   catch (e) { el.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 }
