@@ -265,6 +265,13 @@ export default {
       });
     }
     if (p === '/api/admin/items' && m === 'GET') return J((await get(env, 'items', [])).map(slim));
+    if (p === '/api/admin/items/bulk' && m === 'POST') {
+      const ids = new Set((body.ids || []).map(String).slice(0, 200)), act = String(body.action || ''); if (!ids.size) return err('اختار عنصراً');
+      if (!['publish', 'draft', 'feature', 'unfeature'].includes(act)) return err('إجراء غير معروف');
+      const items = await get(env, 'items', []); let n = 0;
+      for (const i of items) if (ids.has(i.id)) { n++; if (act === 'publish') { i.status = 'published'; i.publishAt = 0; } else if (act === 'draft') i.status = 'draft'; else i.featured = act === 'feature'; }
+      await put(env, 'items', items); await log(env, u.email, 'إجراء جماعي على المحتوى: ' + act + ' (' + n + ')'); return J({ ok: true, n });
+    }
     if (p === '/api/admin/items' && m === 'POST') {
       return saveItem(env, u, body);
     }

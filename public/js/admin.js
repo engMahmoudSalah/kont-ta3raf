@@ -59,13 +59,42 @@ async function aContent(el, editing) {
     $('#cf').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const b = Object.fromEntries(f); b.featured = f.has('featured'); b.publishAt = b.publishAt ? Date.parse(b.publishAt + ':00+02:00') : 0; b.tags = String(b.tags).split(/[,،]/).map(x => x.trim()).filter(Boolean); if (i.id) b.id = i.id; try { await api('/admin/items', 'POST', b); S.home = await api('/home'); toast('تم الحفظ'); aContent(el); } catch (x) { $('#cer').textContent = x.message; } };
     return;
   }
-  el.innerHTML = `<p><button class="btn sm" id="nw">+ محتوى جديد</button></p><div class="tw" style="margin-top:12px"><table class="tbl"><tr><th>العنوان</th><th>التصنيف</th><th>الحالة</th><th>${GI.eye}</th><th></th></tr>
-  ${items.map(i => `<tr><td>${esc(i.title)}</td><td>${esc(catOf(i.cat).name)}</td><td><span class="pill ${i.status === 'published' ? 'g' : 'y'}">${i.status === 'published' ? 'منشور' : 'مسودة'}</span></td><td>${i.views}</td><td><button class="btn sm w" data-e="${esc(i.id)}">تعديل</button> ${S.user.role === 'admin' ? `<button class="btn sm danger" data-d="${esc(i.id)}">حذف</button>` : ''}</td></tr>`).join('')}</table></div>`;
-  $('#nw').onclick = () => aContent(el, '');
-  el.onclick = async e => {
-    if (e.target.dataset.e) aContent(el, e.target.dataset.e);
-    if (e.target.dataset.d && confirm('حذف نهائي؟')) { await api('/admin/items/' + e.target.dataset.d, 'DELETE'); S.home = await api('/home'); aContent(el); }
+  let f = { q: '', st: '', type: '', cat: '', sort: 'new' }, sel = new Set(); const now = Date.now();
+  const stOf = i => i.status !== 'published' ? 'draft' : (i.publishAt && i.publishAt > now) ? 'sched' : 'pub';
+  const SN = { pub: 'منشور', draft: 'مسودة', sched: 'مجدول' };
+  const act = async (a) => { try { await api('/admin/items/bulk', 'POST', { ids: [...sel], action: a }); S.home = await api('/home'); const fresh = await api('/admin/items'); items.length = 0; items.push(...fresh); sel.clear(); draw(); toast('تم'); } catch (e) { toast(e.message); } };
+  const draw = () => {
+    const cnt = k => items.filter(i => stOf(i) === k).length;
+    let r = items.filter(i => (!f.st || stOf(i) === f.st) && (!f.type || i.type === f.type) && (!f.cat || i.cat === f.cat) && (!f.q || (i.title + ' ' + (i.summary || '') + ' ' + (i.tags || []).join(' ')).includes(f.q)));
+    r = r.slice().sort((a, b) => f.sort === 'views' ? (b.views || 0) - (a.views || 0) : f.sort === 'title' ? a.title.localeCompare(b.title, 'ar') : f.sort === 'old' ? (a.created || 0) - (b.created || 0) : (b.created || 0) - (a.created || 0));
+    const filt = f.q || f.st || f.type || f.cat;
+    el.innerHTML = `<div class="ikp"><button class="${!f.st ? 'on' : ''}" data-st=""><b>${items.length}</b><span>الكل</span></button>${['pub', 'draft', 'sched'].map(k => `<button class="${f.st === k ? 'on' : ''}" data-st="${k}"><b>${cnt(k)}</b><span>${SN[k]}</span></button>`).join('')}</div>
+    <div class="itb"><input id="cq" type="search" placeholder="ابحث بالعنوان أو الوسم" value="${esc(f.q)}"><select id="cs" aria-label="الترتيب"><option value="new" ${f.sort === 'new' ? 'selected' : ''}>الأحدث</option><option value="old" ${f.sort === 'old' ? 'selected' : ''}>الأقدم</option><option value="views" ${f.sort === 'views' ? 'selected' : ''}>الأكثر مشاهدة</option><option value="title" ${f.sort === 'title' ? 'selected' : ''}>بالعنوان</option></select><button class="btn sm" id="nw">+ محتوى جديد</button></div>
+    <div class="bar strip" id="ct" role="group" aria-label="النوع"><span class="chip${!f.type ? ' on' : ''}" role="button" tabindex="0" data-t="">كل الأنواع</span>${Object.entries(TYPES).map(([k, v]) => `<span class="chip${f.type === k ? ' on' : ''}" role="button" tabindex="0" data-t="${k}">${v}</span>`).join('')}</div>
+    <div class="bar strip" id="cc" role="group" aria-label="التصنيف"><span class="chip${!f.cat ? ' on' : ''}" role="button" tabindex="0" data-c="">كل التصنيفات</span>${cats.map(c => `<span class="chip${f.cat === c.id ? ' on' : ''}" role="button" tabindex="0" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
+    <p class="icn">${r.length} من ${items.length}${filt ? ' · <button class="lk" id="ccl">مسح الفلاتر</button>' : ''}</p>
+    ${sel.size ? `<div class="ibk"><b>${sel.size} محدد</b><button class="btn w sm" data-b="publish">نشر الآن</button><button class="btn w sm" data-b="draft">إلى مسودة</button><button class="btn w sm" data-b="feature">اختيار للرئيسية</button><button class="btn w sm" data-b="unfeature">إلغاء الاختيار</button><button class="lk" id="cx2">إلغاء</button></div>` : ''}
+    <div class="ilist">${r.map(i => { const s = stOf(i); return `<div class="ig ${sel.has(i.id) ? 'sel' : ''}"><label class="ck"><input type="checkbox" data-sel="${esc(i.id)}" ${sel.has(i.id) ? 'checked' : ''} aria-label="تحديد"></label><div class="ib"><div class="im"><span class="pill ${s === 'pub' ? 'g' : 'y'}">${SN[s]}${s === 'sched' ? ' · ' + date(i.publishAt) : ''}</span><span class="pill">${esc(TYPES[i.type] || i.type)}</span><span class="pill">${esc(catOf(i.cat).name)}</span>${i.featured ? '<span class="pill dp" style="background:var(--sand)">مختار</span>' : ''}${i.ep ? `<small>حلقة ${i.ep}</small>` : ''}</div>
+    <div class="it" style="-webkit-line-clamp:2;cursor:default;font-weight:800">${esc(i.title)}</div><div class="im" style="margin-top:6px"><small>${GI.eye} ${fmt(i.views || 0)}</small><small>إعجابات ${i.likes || 0}</small><small>${i.created ? date(i.created) : ''}</small></div>
+    <div class="ia"><button class="btn sm w" data-e="${esc(i.id)}">تعديل</button>${S.user.role === 'admin' ? `<button class="btn sm danger" data-d="${esc(i.id)}">حذف</button>` : ''}</div></div></div>`; }).join('') || emptyBox(items.length ? 'مفيش نتائج بالفلتر ده' : 'لا يوجد محتوى بعد')}</div>`;
+    $('#nw').onclick = () => aContent(el, '');
+    const q = $('#cq'); q.oninput = () => { f.q = q.value; clearTimeout(draw.t); draw.t = setTimeout(() => { draw(); const n = $('#cq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    $('#cs').onchange = e => { f.sort = e.target.value; draw(); };
+    const cl = $('#ccl'); if (cl) cl.onclick = () => { f = { ...f, q: '', st: '', type: '', cat: '' }; draw(); };
+    el.querySelector('.ikp').onclick = e => { const b = e.target.closest('[data-st]'); if (b) { f.st = b.dataset.st; draw(); } };
+    $('#ct').onclick = e => { const c = e.target.closest('[data-t]'); if (c) { f.type = c.dataset.t; draw(); } };
+    $('#cc').onclick = e => { const c = e.target.closest('[data-c]'); if (c) { f.cat = c.dataset.c; draw(); } };
+    [$('#ct'), $('#cc')].forEach(x => x.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); } });
+    el.querySelectorAll('[data-b]').forEach(b => b.onclick = () => act(b.dataset.b));
+    const cx = $('#cx2'); if (cx) cx.onclick = () => { sel.clear(); draw(); };
+    el.querySelector('.ilist').onclick = async e => {
+      const t = e.target;
+      if (t.dataset.sel) { t.checked ? sel.add(t.dataset.sel) : sel.delete(t.dataset.sel); return draw(); }
+      if (t.dataset.e) return aContent(el, t.dataset.e);
+      if (t.dataset.d && confirm('حذف نهائي؟')) { await api('/admin/items/' + t.dataset.d, 'DELETE'); S.home = await api('/home'); aContent(el); }
+    };
   };
+  draw();
 }
 async function aComments(el) {
   const l = await api('/admin/comments');
