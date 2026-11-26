@@ -258,3 +258,19 @@ article.post{padding-inline:2px}
 .kq h2{font-size:24px;margin:8px 0 14px}.ka{display:flex;flex-direction:column;gap:12px}.ka .btn{font-size:22px;min-height:60px;justify-content:center}
 .stars{font-size:44px;color:var(--yellow);-webkit-text-stroke:2px var(--ink);margin:8px 0 14px;letter-spacing:6px}
 .kids .h2{font-size:34px}
+
+body[data-p=explorer]{--acc:#2E6FBE}body[data-p=analyst]{--acc:#EF642D}body[data-p=storyteller]{--acc:#F0B400}body[data-p=dreamer]{--acc:#463C50}
+.kick{background:var(--acc,var(--blue))!important}
+body[data-p=storyteller] .post p,body[data-p=storyteller] .post li{font-size:19px;line-height:2.1}
+body[data-p=analyst] .post h2{border-inline-start:6px solid var(--acc);padding-inline-start:10px}
+body[data-p=explorer] .post .pcover,body[data-p=explorer] .post .vid{border-width:4px}
+body[data-p=dreamer] .post h1{letter-spacing:.2px}body[data-p=dreamer] .post::after{content:"فكّر: لو كان هذا مختلفاً، ماذا كان سيتغيّر؟";display:block;margin-top:28px;padding:14px;background:var(--plum);color:#fff;border-radius:16px;font-weight:700}
+.news{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px 2px 14px;margin-top:14px;scrollbar-width:thin}
+.nw{flex:0 0 min(78%,260px);scroll-snap-align:start;background:#fff;border:var(--b);border-radius:18px;box-shadow:var(--sh);padding:14px;display:flex;flex-direction:column;gap:6px;min-height:130px}
+.nw small{align-self:flex-start;background:var(--ink);color:var(--cream);border-radius:20px;padding:1px 12px;font-weight:900;font-size:12px}
+.nw b{font-size:17px;line-height:1.5}.nw span{font-size:13px;color:var(--grey)}
+.nw.alt{background:var(--yellow)}.nw.alt span{color:var(--ink)}
+.live{display:inline-flex;align-items:center;gap:8px}.live:before{content:"";width:12px;height:12px;border-radius:50%;background:var(--red);border:2px solid var(--ink);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.live:before{animation:none}}
+@media(min-width:901px){.nw{flex-basis:calc(20% - 12px)}}

@@ -16,7 +16,7 @@ const KQ = [
 ];
 function pKids() {
   let q = 0, stars = 0;
-  const facts = `<div class="kf">${KFACTS.map(([n, t, c], i) => `<button class="kc" style="background:${c}" data-i="${i}" aria-label="${n}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>`;
+  const facts = `<div class="kf">${KFACTS.map(([n, t, c], i) => `<button class="kc" style="background:${c};color:${c === '#2E6FBE' ? '#fff' : 'var(--ink)'}" data-i="${i}" aria-label="${n}"><b>${n}</b><span>${t}</span></button>`).join('')}</div>`;
   const draw = () => {
     const quiz = q >= KQ.length
       ? `<div class="box kq"><h2>برافو! جمعت ${stars} من ${KQ.length} نجوم</h2><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(KQ.length - stars)}</div><button class="btn red" id="kr">نلعب تاني</button></div>`

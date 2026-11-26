@@ -24,7 +24,8 @@ const ICONS = {
   experiences: '<path d="M12 3l2.500 5.500L20 9.200l-4 4 1 5.800-5-2.800-5 2.800 1-5.800-4-4 5.500-.7z"/>',
   body: '<path d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z"/>',
 };
-const cicon = (id, sz = 28) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="#181818" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="8"/>'}</svg>`;
+const DARKC = new Set(['science', 'space', 'weird', 'experiences']);
+const cicon = (id, sz = 28) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="${DARKC.has(id) ? '#FBFBF9' : '#181818'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="8"/>'}</svg>`;
 function card(i) {
   const c = catOf(i.cat);
   return `<a class="card" href="#/item/${esc(i.id)}">${i.cover ? `<div class="th cov"><em>${esc(c.name)}</em><img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy"></div>` : `<div class="th" style="background:${c.color}"><em>${esc(c.name)}</em>${mascot()}</div>`}
@@ -42,6 +43,7 @@ function md(t) {
   if (ul) out.push('</ul>'); return out.join('');
 }
 function shell(inner, route, o = {}) {
+  document.body.dataset.p = persona();
   const s = S.home.settings; const u = S.user;
   const link = (h, t) => `<a href="#${h}" class="${route === h ? 'on' : ''}" ${route === h ? 'aria-current="page"' : ''}>${t}</a>`;
   $('#app').innerHTML = `${s.announcement ? `<div class="ann" role="note">${esc(s.announcement)}</div>` : ''}

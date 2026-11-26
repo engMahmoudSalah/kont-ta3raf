@@ -8,9 +8,10 @@ function pHome() {
   <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">${meter()}<div style="flex:1;min-width:220px"><b style="font-size:20px">لعبة اليوم: صدّق أو لا</b><br>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.<p style="margin-top:10px"><a class="btn red sm" href="#/play">العب الآن ←</a></p></div></div></div></section>
+  ${newsBand(items)}
   ${forYou(items, cats)}
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>${cats.length} عالماً، وكل واحد فيه ما يستحق أن تعرفه</small></div>
-  <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
+  <div class="cats">${orderCats(cats).map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
   ${feat.length ? `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مختارات<small>ابدأ من هنا</small></div><div class="feat" style="margin-top:22px">${feat.map(card).join('')}</div></div></section>` : ''}
   <section class="s" style="padding-top:0"><div class="wrap"><div class="h2">الأحدث</div><div class="grid">${latest.map(card).join('')}</div>
   <p style="text-align:center;margin-top:24px"><a class="btn" href="#/explore">كل المحتوى</a></p></div></section>
@@ -59,7 +60,7 @@ async function pItem(id) {
   <h2 style="margin-top:36px">التعليقات</h2><div id="cms">${cm(d.comments)}</div>
   ${u ? `<label class="f">أضف تعليقاً</label><textarea id="ct" maxlength="600"></textarea><p style="margin-top:8px"><button class="btn sm" id="b-cm">أرسل</button></p><div class="err" id="ce"></div>` : '<p class="empty"><a class="btn sm" href="#/login">سجّل الدخول للتعليق</a></p>'}
   ${d.related.length ? `<h2 style="margin-top:36px">قد يعجبك</h2><div class="grid" style="grid-template-columns:1fr">${d.related.map(card).join('')}</div>` : ''}</article></div>`, '');
-  addXp(10, 'v:' + i.id);
+  addXp(10, 'v:' + i.id); document.title = i.title + ' | ' + S.home.settings.siteName;
   const need = () => { if (!S.user) { toast('سجّل الدخول أولاً'); location.hash = '#/login'; return true; } };
   $('#b-like').onclick = async () => { try { const r = await api(`/items/${i.id}/like`, 'POST'); $('#lk').innerHTML = GI.heart + ' ' + r.likes; } catch (e) { toast(e.message); } };
   $('#b-save').onclick = async () => { if (need()) return; const r = await api('/me/bookmark', 'POST', { id: i.id }); S.user.bookmarks = r.bookmarks; $('#b-save').textContent = r.bookmarks.includes(i.id) ? '★ محفوظ' : '☆ احفظ'; };
@@ -141,4 +142,12 @@ function forYou(items, cats) {
   const t = persona(); if (!t) return `<section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--sand)">${mascot()}<div style="flex:1;min-width:200px"><b>أي نوع قارئ أنت؟</b><br>4 أسئلة سريعة، وبعدها الموقع يتغيّر على مزاجك.</div><a class="btn red sm" href="#/quiz">ابدأ الاختبار</a></div></div></section>`;
   const P = PERSONAS[t], pick = items.filter(i => P.cats.includes(i.cat)).sort((a, b) => P.cats.indexOf(a.cat) - P.cats.indexOf(b.cat) || b.created - a.created).slice(0, 3);
   return `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2">مخصّص لك: ${P.name}<small>${P.line} <a href="#/quiz"><b>غيّر شخصيتك</b></a></small></div><div class="grid" style="margin-top:18px;border-top:6px solid ${P.color};padding-top:18px">${pick.map(card).join('') || '<p class="empty">قريباً</p>'}</div></div></section>`;
+}
+
+function orderCats(cats) { const t = persona(); if (!t) return cats; const o = PERSONAS[t].cats; return [...cats].sort((a, b) => { const x = o.indexOf(a.id), y = o.indexOf(b.id); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); }); }
+function newsBand(items) {
+  const L = [...items].filter(i => i.created <= Date.now()).sort((a, b) => b.created - a.created).slice(0, 4);
+  const f = FACTS[Math.floor(Date.now() / 864e5) % FACTS.length];
+  const cards = [...L.map(i => `<a class="nw" href="#/item/${i.id}"><small>جديد</small><b>${esc(i.title)}</b></a>`), `<a class="nw alt" href="#/play"><small>خبر اليوم</small><b>${esc(f[0])}</b><span>صح أم خرافة؟ تعال اكتشف</span></a>`];
+  return `<section class="s" style="padding-top:0"><div class="wrap"><div class="h2"><span class="live">عاجل من ماسكوت</span><small>آخر ما وصل إلى كنت تعرف</small></div><div class="news">${cards.join('')}</div></div></section>`;
 }
