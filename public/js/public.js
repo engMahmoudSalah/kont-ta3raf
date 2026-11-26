@@ -5,7 +5,7 @@ function pHome() {
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
   shell(`<section class="hero"><div class="wrap"><div><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
-  <div class="say" style="max-width:420px;margin-bottom:18px">${mascot()}<span>أنا ماسكوت القناة. أسأل "كنت تعرف؟" وأجاوب بسرعة.</span></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
+  <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s"><div class="wrap"><div class="h2">اختر عالمك<small>ست تصنيفات، وكل واحد فيه ما يستحق أن تعرفه</small></div>
   <div class="cats">${cats.map(c => `<a class="cat" href="#/explore/${c.id}"><div class="ic" style="background:${c.color}">${cicon(c.id)}</div><b>${esc(c.name)}</b><span>${c.count} عنصر</span></a>`).join('')}</div></div></section>
@@ -17,6 +17,7 @@ function pHome() {
   <div><b class="n">2</b><b>احفظ وتابع</b><br>أضف للمفضلة وعلّم ما أنهيته.</div>
   <div><b class="n">3</b><b>شارك وناقش</b><br>علّق واقترح موضوع الحلقة القادمة.</div></div></div></section>
   <section class="s" style="padding-top:0"><div class="wrap"><div class="cta-band"><h2>جاهز تعرف أكثر؟</h2><a class="btn" href="#/signup">انضم مجاناً</a></div></div></section>`, '/');
+  initHero(items);
 }
 function pEpisodes() {
   const eps = S.home.items.filter(i => i.ep).sort((a, b) => b.ep - a.ep);
@@ -99,3 +100,21 @@ function pSuggest() {
   $('#sb').onclick = async () => { try { await api('/suggest', 'POST', { text: $('#st').value }); toast('وصل اقتراحك، شكراً!'); $('#st').value = ''; } catch (e) { $('#se').textContent = e.message; } };
 }
 
+
+function initHero(items) {
+  const q = items.filter(i => i.type !== 'checklist'); const t = $('#hqt'), a = $('#hqa'), m = document.querySelector('.hero-art .big'); if (!t || !q.length) return;
+  let k = Math.floor(Math.random() * q.length), iv;
+  const show = () => { const i = q[k % q.length]; t.textContent = i.title; a.href = '#/item/' + i.id; t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); };
+  const next = () => { k++; show(); clearInterval(iv); iv = setInterval(tick, 6000); };
+  const tick = () => { if (!document.getElementById('hqt')) return clearInterval(iv); k++; show(); };
+  show(); iv = setInterval(tick, 6000);
+  $('#hqn').onclick = next;
+  m.style.cursor = 'pointer'; m.onclick = () => { m.classList.remove('hop'); void m.offsetWidth; m.classList.add('hop'); next(); };
+  const pu = [...m.querySelectorAll('.eyes circle')].slice(2);
+  const look = e => {
+    if (!document.body.contains(m)) return document.removeEventListener('pointermove', look);
+    const r = m.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * .45, dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy) || 1, f = Math.min(1, d / 160) * 5.5;
+    pu.forEach(c => c.setAttribute('transform', `translate(${(dx / d * f).toFixed(2)} ${(dy / d * f).toFixed(2)})`));
+  };
+  document.addEventListener('pointermove', look, { passive: true });
+}

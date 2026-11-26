@@ -233,3 +233,14 @@ article.post{padding-inline:2px}
   .plan,.box{padding:18px}
   footer .wrap{flex-direction:column}
 }
+
+/* hero question bubble */
+.hq{position:relative;background:#fff;border:var(--b);border-radius:22px;padding:16px 18px 14px;max-width:460px;margin-bottom:20px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.hq small{background:var(--red);color:#fff;font-weight:900;border-radius:20px;padding:2px 12px;font-size:13px}
+.hq b{font-size:clamp(19px,3.4vw,24px);line-height:1.45;min-height:2.9em;display:block}
+.hq b.pop{animation:pop .4s ease}
+.hq .hqn{background:none;border:0;font:inherit;font-weight:700;color:var(--grey);cursor:pointer;padding:6px 4px;min-height:40px;position:absolute;inset-inline-end:12px;bottom:10px}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.hero-art .big.hop{animation:hop .5s ease}
+@keyframes hop{0%{transform:scale(1)}35%{transform:scale(1.08) rotate(-4deg)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.hq b.pop,.hero-art .big.hop{animation:none}}
