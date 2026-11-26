@@ -274,3 +274,48 @@ body[data-p=dreamer] .post h1{letter-spacing:.2px}body[data-p=dreamer] .post::af
 @keyframes blink{50%{opacity:.25}}
 @media(prefers-reduced-motion:reduce){.live:before{animation:none}}
 @media(min-width:901px){.nw{flex-basis:calc(20% - 12px)}}
+
+/* ===== v16: floating navbar, window hero, 80% scale ===== */
+body{zoom:.8}
+header.top{background:transparent;border:0;top:8px;padding:0 10px;margin-top:8px}
+header.top .wrap{background:rgba(251,251,249,.92);backdrop-filter:blur(8px);border:var(--b);border-radius:22px;box-shadow:var(--sh);height:60px;padding:0 14px 0 10px;max-width:1160px}
+nav.m{flex:1;display:flex;align-items:center;gap:10px;margin:0}
+nav.m .lk{display:flex;gap:2px;margin-inline:auto;background:var(--cream);border:2px solid var(--ink);border-radius:30px;padding:3px}
+nav.m .lk a{padding:4px 14px;border-radius:30px;min-height:34px}
+nav.m .lk a.on{background:var(--ink);color:#fff}
+nav.m .lk a:hover:not(.on){background:var(--sand)}
+.rt2{display:flex;align-items:center;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;background:var(--yellow);border:2px solid var(--ink);border-radius:30px;padding:2px 12px 2px 10px;font-weight:900;min-height:34px;white-space:nowrap}
+.hero2{padding:34px 0 64px;position:relative;overflow:hidden}
+.hero2 .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+.hero2 h1{font-size:clamp(34px,6vw,64px);line-height:1.15;font-weight:900;margin:14px 0}
+.hero2 .sub{font-size:19px;max-width:520px;margin-bottom:22px}
+.hero2 .cta{display:flex;gap:12px;flex-wrap:wrap}
+.hstats{list-style:none;padding:0;display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.hstats li{background:#fff;border:2px solid var(--ink);border-radius:30px;padding:2px 14px;font-weight:700}
+.hstats b{font-size:20px;margin-inline-end:4px}
+.stage{position:relative;padding-bottom:70px}
+.win{position:relative;aspect-ratio:4/4.6;max-width:430px;margin-inline:auto;border:var(--b);border-radius:46% 46% 38% 38%/34% 34% 26% 26%;box-shadow:var(--sh),inset 0 0 0 10px #fff,inset 0 0 0 13px var(--ink);background:linear-gradient(#9DC4D5 0%,#cfe3ea 55%,#FADA80 100%);overflow:hidden;display:grid;place-items:center}
+.win .hero-art{width:100%;min-height:0;height:100%}
+.win .hero-art .big{width:58%}
+.win .hero-art .bang{width:44px;top:18%;inset-inline-end:14%}
+.win .hero-art .c1{top:14%;width:90px;inset-inline-start:8%}.win .hero-art .c2{bottom:20%;width:70px;inset-inline-end:8%}
+.win .hero-art .sunb{width:70px;bottom:14%;inset-inline-start:12%}
+.qm{position:absolute;font-style:normal;font-weight:900;color:var(--red);-webkit-text-stroke:2px var(--ink);font-size:34px;animation:float 4s ease-in-out infinite}
+.qm.q1{top:22%;inset-inline-start:22%}.qm.q2{top:36%;inset-inline-end:10%;animation-delay:-1.2s;font-size:26px}.qm.q3{bottom:30%;inset-inline-end:26%;animation-delay:-2.4s;color:var(--blue);font-size:30px}
+.stage .hq{position:absolute;bottom:0;inset-inline:6%;max-width:none;margin:0;z-index:2}
+.dock{position:absolute;top:14px;inset-inline-start:-6px;z-index:3;display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:16px;padding:6px 12px 6px 8px;max-width:230px;box-shadow:4px 4px 0 var(--red)}
+.dock .pl{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--red);flex:none}
+.dock small{display:block;color:var(--yellow);font-size:11px;font-weight:900;line-height:1.2}.dock b{display:block;font-size:13px;line-height:1.3}
+@media(max-width:900px){
+  header.top .wrap{height:54px}
+  nav.m{display:none;position:absolute;top:62px;inset-inline:0;background:#fff;border:var(--b);border-radius:20px;box-shadow:var(--sh);flex-direction:column;align-items:stretch;padding:12px;gap:10px;margin:0}
+  nav.m.open{display:flex}
+  nav.m .lk{display:grid;grid-template-columns:1fr 1fr;border-radius:16px;margin:0}
+  nav.m .lk a{text-align:center;justify-content:center;border-radius:12px}
+  .rt2{justify-content:space-between;flex-wrap:wrap}
+  .hero2 .wrap{grid-template-columns:1fr;gap:28px}
+  .dock{inset-inline-start:0;top:8px;max-width:200px}
+}
+@media(max-width:560px){.hero2{padding-top:18px}.hero2 h1{font-size:36px}.win{max-width:340px}}
+@media(prefers-reduced-motion:reduce){.qm{animation:none}}

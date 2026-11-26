@@ -3,9 +3,14 @@
 function pHome() {
   const { settings: s, cats, items } = S.home; const feat = items.filter(i => i.featured).slice(0, 2);
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
-  shell(`<section class="hero"><div class="wrap"><div><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
+  const lat = [...items].filter(x => x.type === 'video').sort((a, b) => (b.ep || 0) - (a.ep || 0))[0] || latest[0];
+  shell(`<section class="hero2"><div class="wrap"><div class="hc"><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
   <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
-  <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div><div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/signup">أنشئ حسابك</a></div></div>${art()}</div></section>
+  <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/play">العب صدّق أو لا</a></div>
+  <ul class="hstats"><li><b>${items.length}</b> محتوى</li><li><b>${cats.length}</b> عالم</li><li><b>2</b> حلقة يومياً</li></ul></div>
+  <div class="stage"><div class="win">${art()}<i class="qm q1">؟</i><i class="qm q2">؟</i><i class="qm q3">!</i></div>
+  <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div>
+  ${lat ? `<a class="dock" href="#/item/${lat.id}"><span class="pl">${GI.eye.replace('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', '<path d="M7 4l13 8-13 8z"/>')}</span><span><small>أحدث حلقة</small><b>${esc(lat.title)}</b></span></a>` : ''}</div></div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">${meter()}<div style="flex:1;min-width:220px"><b style="font-size:20px">لعبة اليوم: صدّق أو لا</b><br>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.<p style="margin-top:10px"><a class="btn red sm" href="#/play">العب الآن ←</a></p></div></div></div></section>
   ${newsBand(items)}
