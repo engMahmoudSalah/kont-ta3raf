@@ -134,12 +134,13 @@ function pPlans() {
 function pSuggest() {
   const cats = S.home.cats, ex = ['لماذا نشعر بالدوار في السيارة؟', 'كيف يعمل الـ GPS؟', 'لماذا الموز مقوّس؟', 'ماذا يحدث للنوم عندما نحلم؟'];
   let cat = '';
-  shell(`<div class="wrap"><div class="box auth sg"><div class="h2">اقترح موضوعاً<small>ما الذي تتمنى أن نشرحه؟ نقرأ كل اقتراح.</small></div>
-  <div class="say" style="margin:12px 0">${mascot()}<span>اكتب سؤالاً واحداً واضحاً، وسأحوّله لحلقة.</span></div>
-  <label class="f">التصنيف (اختياري)</label><div class="bar strip" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
+  shell(`<div class="wrap"><section class="sg sgx"><aside class="sgi"><div class="h2">اقترح موضوعاً<small>ما الذي تتمنى أن نشرحه؟ نقرأ كل اقتراح.</small></div>
+  <div class="say">${mascot()}<span>اكتب سؤالاً واحداً واضحاً، وسأحوّله لحلقة.</span></div>
+  <ol class="sgs"><li><b>1</b><span>تكتب سؤالك</span></li><li><b>2</b><span>نقرأه ونختار الأفضل</span></li><li><b>3</b><span>نحوّله لحلقة وننشرها</span></li></ol></aside>
+  <div class="sgf"><label class="f">التصنيف (اختياري)</label><div class="bar strip" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
   <label class="f" for="st">اقتراحك</label><textarea id="st" maxlength="500" placeholder="مثال: ${ex[0]}"></textarea>
-  <div class="bar" style="justify-content:space-between"><small id="sn" dir="ltr">0 / 500</small><span class="bar strip" id="se2">${ex.map(e => `<span class="chip" role="button" tabindex="0" data-e="${esc(e)}">${esc(e)}</span>`).join('')}</span></div>
-  <p style="margin-top:12px"><button class="btn red" id="sb">إرسال</button></p><div class="err" id="se" role="alert"></div></div></div>`, '/suggest');
+  <div class="sgm"><small id="sn" dir="ltr">0 / 500</small><button class="btn red" id="sb">إرسال</button></div><div class="err" id="se" role="alert"></div>
+  <label class="f">أو ابدأ من فكرة جاهزة</label><div class="exl" id="se2">${ex.map(e => `<span class="chip" role="button" tabindex="0" data-e="${esc(e)}">${esc(e)}</span>`).join('')}</div></div></section></div>`, '/suggest');
   const t = $('#st'), cnt = () => { $('#sn').textContent = t.value.length + ' / 500'; };
   t.oninput = () => { cnt(); $('#se').textContent = ''; };
   const pickC = e => { const c = e.target.closest('[data-c]'); if (!c) return; cat = cat === c.dataset.c ? '' : c.dataset.c; document.querySelectorAll('#sc .chip').forEach(x => { const on = x.dataset.c === cat; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); };
@@ -150,7 +151,7 @@ function pSuggest() {
     const v = t.value.trim(); if (v.length < 5) { $('#se').textContent = 'اكتب اقتراحاً من 5 أحرف على الأقل'; return; }
     const b = $('#sb'); b.disabled = true; $('#se').textContent = '';
     try { const c = cats.find(x => x.id === cat); await api('/suggest', 'POST', { text: (c ? '[' + c.name + '] ' : '') + v });
-      $('.sg').innerHTML = `<div style="text-align:center">${mascot()}<h1 style="margin:10px 0">وصل اقتراحك، شكراً!</h1><p>سنقرأه ونفكّر في تحويله لحلقة.</p><p style="margin-top:14px"><button class="btn red" id="sa">اقترح موضوعاً آخر</button> <a class="btn w" href="#/explore">استكشف</a></p></div>`;
+      $('.sg').className = 'sg sgdone'; $('.sg').innerHTML = `<div style="text-align:center">${mascot()}<h1 style="margin:10px 0">وصل اقتراحك، شكراً!</h1><p>سنقرأه ونفكّر في تحويله لحلقة.</p><p style="margin-top:14px"><button class="btn red" id="sa">اقترح موضوعاً آخر</button> <a class="btn w" href="#/explore">استكشف</a></p></div>`;
       $('#sa').onclick = pSuggest; toast('وصل اقتراحك، شكراً!');
     } catch (e) { $('#se').textContent = e.message; b.disabled = false; }
   };
