@@ -50,10 +50,10 @@ function pExplore(cat) {
   <div class="bar" id="fc" role="group" aria-label="التصنيف"></div><div class="bar" id="ft" role="group" aria-label="النوع"></div>
   <div class="bar xbar"><small id="xn" aria-live="polite"></small><select id="xs" aria-label="الترتيب">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><button class="btn sm" id="xc" type="button" hidden>مسح الفلاتر</button></div>
   <div class="grid" id="res"></div></div></section>`, '/explore');
-  const chip = (on, a, v, t) => `<span class="chip ${on ? 'on' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-${a}="${v}">${t}</span>`;
+  const chip = (on, a, v, t, n, col) => `<span class="chip ${on ? 'on' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-${a}="${v}"${col ? ` style="--cc:${col}"` : ''}>${t}${n != null ? `<em>${n}</em>` : ''}</span>`;
   const draw = () => {
-    $('#fc').innerHTML = chip(!st.cat, 'c', '', 'الكل') + cats.map(c => chip(st.cat === c.id, 'c', c.id, esc(c.name))).join('');
-    $('#ft').innerHTML = chip(!st.type, 't', '', 'كل الأنواع') + Object.entries(TYPES).map(([k, v]) => chip(st.type === k, 't', k, v)).join('');
+    $('#fc').innerHTML = chip(!st.cat, 'c', '', 'الكل', items.length) + cats.map(c => chip(st.cat === c.id, 'c', c.id, esc(c.name), items.filter(i => i.cat === c.id).length, c.color)).join('');
+    $('#ft').innerHTML = chip(!st.type, 't', '', 'كل الأنواع', items.length) + Object.entries(TYPES).map(([k, v]) => chip(st.type === k, 't', k, v, items.filter(i => i.type === k).length)).join('');
     const q = st.q.trim().toLowerCase();
     const r = items.filter(i => (!st.cat || i.cat === st.cat) && (!st.type || i.type === st.type) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
     const by = { new: (a, b) => (b.publishAt || 0) - (a.publishAt || 0), old: (a, b) => (a.publishAt || 0) - (b.publishAt || 0), views: (a, b) => (b.views || 0) - (a.views || 0), short: (a, b) => (a.minutes || 0) - (b.minutes || 0) };
@@ -134,7 +134,7 @@ function pSuggest() {
   let cat = '';
   shell(`<div class="wrap"><div class="box auth sg"><div class="h2">اقترح موضوعاً<small>ما الذي تتمنى أن نشرحه؟ نقرأ كل اقتراح.</small></div>
   <div class="say" style="margin:12px 0">${mascot()}<span>اكتب سؤالاً واحداً واضحاً، وسأحوّله لحلقة.</span></div>
-  <label class="f">التصنيف (اختياري)</label><div class="bar" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}">${esc(c.name)}</span>`).join('')}</div>
+  <label class="f">التصنيف (اختياري)</label><div class="bar" id="sc" role="group" aria-label="التصنيف">${cats.map(c => `<span class="chip" role="button" tabindex="0" aria-pressed="false" data-c="${c.id}" style="--cc:${c.color}">${esc(c.name)}</span>`).join('')}</div>
   <label class="f" for="st">اقتراحك</label><textarea id="st" maxlength="500" placeholder="مثال: ${ex[0]}"></textarea>
   <div class="bar" style="justify-content:space-between"><small id="sn" dir="ltr">0 / 500</small><span class="bar" id="se2">${ex.map(e => `<span class="chip" role="button" tabindex="0" data-e="${esc(e)}">${esc(e)}</span>`).join('')}</span></div>
   <p style="margin-top:12px"><button class="btn red" id="sb">إرسال</button></p><div class="err" id="se" role="alert"></div></div></div>`, '/suggest');

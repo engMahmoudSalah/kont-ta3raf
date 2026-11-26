@@ -546,3 +546,14 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 @media(prefers-reduced-motion:reduce){.acx .box{transform:none!important}}
 /* v52 suggest */
 .sg{max-width:560px}.sg #se2 .chip{font-weight:600}.sg textarea{width:100%}
+/* v53 filter chips: bigger, colored dot, count, scroll strip on phones */
+.chip[role=button]{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 16px;font-size:16px;border-radius:24px;transition:transform .12s,background .12s;white-space:nowrap}
+.chip[role=button]::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--cc,var(--line));border:1.5px solid var(--ink);flex:none}
+.chip[role=button][data-e]::before,.chip[role=button][data-t]::before,.chip[role=button][data-c=""]::before{display:none}
+.chip[role=button] em{font-style:normal;font-size:12px;font-weight:800;background:rgba(0,0,0,.08);border-radius:10px;padding:1px 7px}
+.chip.on[role=button] em{background:rgba(255,255,255,.22)}
+.chip[role=button]:hover{transform:translateY(-1px)}.chip[role=button]:active{transform:scale(.97)}
+.chip.on[role=button]::before{border-color:#fff}
+#fc,#ft,#sc{gap:10px}
+@media(max-width:700px){#fc,#ft{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 8px;margin-inline:-2px;scrollbar-width:none}#fc::-webkit-scrollbar,#ft::-webkit-scrollbar{display:none}#fc .chip,#ft .chip{scroll-snap-align:center;flex:none}}
+.chip.z[role=button]:not(.on){opacity:.55}
