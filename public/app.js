@@ -79,7 +79,7 @@ function pHome() {
 function pEpisodes() {
   const eps = S.home.items.filter(i => i.ep).sort((a, b) => b.ep - a.ep);
   shell(`<section class="s"><div class="wrap"><div class="h2">الحلقات<small>حلقة جديدة كل يوم، من الأحدث إلى الأقدم</small></div>
-  <div class="grid" style="grid-template-columns:1fr;max-width:760px">${eps.map(i => `<a class="card" href="#/item/${esc(i.id)}" style="flex-direction:row;align-items:stretch"><div style="flex:0 0 46%;position:relative;border-inline-end:var(--b);background:var(--ink)">${i.cover ? `<img src="${esc(i.cover)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">` : mascot()}</div>
+  <div class="grid" style="grid-template-columns:1fr;max-width:760px">${eps.map(i => `<a class="card" href="#/item/${esc(i.id)}" ><div style="aspect-ratio:16/9;border-bottom:var(--b);background:var(--ink);display:grid;place-items:center">${i.cover ? `<img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">` : mascot()}</div>
   <div class="bd"><div class="meta"><span class="pill y">حلقة ${i.ep}</span><span>${esc(catOf(i.cat).name)}</span><span>${i.minutes} د</span></div><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`).join('') || emptyBox('الحلقات قريباً')}</div></div></section>`, '/episodes');
 }
 function pExplore(cat) {
