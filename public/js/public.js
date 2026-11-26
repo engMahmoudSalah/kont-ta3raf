@@ -4,13 +4,17 @@ function pHome() {
   const { settings: s, cats, items } = S.home; const feat = items.filter(i => i.featured).slice(0, 2);
   const latest = [...items].sort((a, b) => b.created - a.created).slice(0, 6);
   const lat = [...items].filter(x => x.type === 'video').sort((a, b) => (b.ep || 0) - (a.ep || 0))[0] || latest[0];
-  shell(`<section class="hero2"><div class="wrap"><div class="hc"><span class="kick">معلومة قصيرة، قيمة كبيرة</span>
-  <h1>${esc(s.heroTitle)}</h1><p class="sub">${esc(s.heroSub)}</p>
-  <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/play">العب صدّق أو لا</a></div>
-  <ul class="hstats"><li><b>${items.length}</b> محتوى</li><li><b>${cats.length}</b> عالم</li><li><b>2</b> حلقة يومياً</li></ul></div>
-  <div class="stage"><div class="win">${art()}<i class="qm q1">؟</i><i class="qm q2">؟</i><i class="qm q3">!</i></div>
-  <div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div>
-  ${lat ? `<a class="dock" href="#/item/${lat.id}"><span class="pl">${GI.eye.replace('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', '<path d="M7 4l13 8-13 8z"/>')}</span><span><small>أحدث حلقة</small><b>${esc(lat.title)}</b></span></a>` : ''}</div></div></section>
+  const pos = [[8, 16], [24, 6], [76, 8], [90, 22], [6, 44], [93, 48], [14, 58], [84, 56], [28, 66], [66, 66], [50, 4]];
+  const cols = ['#F0B400', '#EF642D', '#9DC4D5', '#FADA80', '#2E6FBE', '#fff'];
+  shell(`<section class="scene" id="scene" style="--px:0;--py:0;--sy:0"><div class="sk"></div><div class="grain"></div>
+  <div class="pl pl-q" style="--d:.15" aria-hidden="true">؟</div>
+  <div class="pl pl-o" style="--d:.6">${cats.slice(0, 11).map((c, n) => `<a class="orb o${n}" href="#/explore?cat=${c.id}" style="inset-inline-start:${(pos[n][0]*.8).toFixed(0)}%;top:${pos[n][1]}%;--c:${cols[n % 6]};--dl:${(n * -.7).toFixed(1)}s"><span>${cicon(c.id, 22)}${esc(c.name)}</span></a>`).join('')}</div>
+  <div class="pl pl-t" style="--d:.3"><h1>${esc(s.heroTitle)}</h1></div>
+  <div class="pl pl-m" style="--d:.5"><div class="hero-art">${mascot('big')}</div></div>
+  <div class="pl pl-f" style="--d:1.1" aria-hidden="true">${cloud('fc1')}${cloud('fc2')}${cloud('fc3')}</div>
+  <div class="sc-bot"><div class="hq" aria-live="polite"><small>كنت تعرف؟</small><b id="hqt"></b><a id="hqa" class="btn sm blue" href="#/explore">اعرف الإجابة ←</a><button class="hqn" id="hqn" aria-label="سؤال آخر">↻ سؤال تاني</button></div>
+  <p class="sub">${esc(s.heroSub)}</p>
+  <div class="cta"><a class="btn red" href="#/explore">ابدأ الاستكشاف ←</a><a class="btn w" href="#/play">العب صدّق أو لا</a>${lat ? `<a class="btn y" href="#/item/${lat.id}">أحدث حلقة ▸</a>` : ''}</div></div></section>
   <div class="marq"><div>${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')} &nbsp;✦&nbsp; ${cats.map(c => `${esc(c.name)}`).join(' &nbsp;✦&nbsp; ')}</div></div>
   <section class="s" style="padding-top:0"><div class="wrap"><div class="box" style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">${meter()}<div style="flex:1;min-width:220px"><b style="font-size:20px">لعبة اليوم: صدّق أو لا</b><br>3 معلومات، بعضها خرافة. كل إجابة ومقال تقرأه يرفع مقياس فضولك.<p style="margin-top:10px"><a class="btn red sm" href="#/play">العب الآن ←</a></p></div></div></div></section>
   ${newsBand(items)}
@@ -126,6 +130,20 @@ function initHero(items) {
     pu.forEach(c => c.setAttribute('transform', `translate(${(dx / d * f).toFixed(2)} ${(dy / d * f).toFixed(2)})`));
   };
   document.addEventListener('pointermove', look, { passive: true });
+  initPar();
+}
+function initPar() {
+  const sc = document.getElementById('scene'); if (!sc || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let px = 0, py = 0, tx = 0, ty = 0, vis = true, raf = 0, sy = 0;
+  const io = new IntersectionObserver(e => { vis = e[0].isIntersecting; if (vis) loop(); }); io.observe(sc);
+  document.addEventListener('pointermove', e => { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; }, { passive: true });
+  addEventListener('scroll', () => { sy = scrollY; }, { passive: true });
+  const loop = () => {
+    if (!document.body.contains(sc)) return; px += (tx - px) * .08; py += (ty - py) * .08;
+    sc.style.setProperty('--px', px.toFixed(3)); sc.style.setProperty('--py', py.toFixed(3)); sc.style.setProperty('--sy', sy);
+    if (vis && !document.hidden) raf = requestAnimationFrame(loop);
+  };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && vis) loop(); }); loop();
 }
 
 function pQuiz() {
