@@ -122,10 +122,35 @@ async function pAccount() {
   <div class="box"><b>تقدّمك حسب التصنيف</b>${S.home.cats.map(c => { const all = items.filter(i => i.cat === c.id), dn = all.filter(i => u.done.includes(i.id)); return all.length ? `<div class="pg"><span>${esc(c.name)}</span><i><u style="width:${Math.round(dn.length / all.length * 100)}%;background:${c.color}"></u></i><small>${dn.length}/${all.length}</small></div>` : ''; }).join('')}</div></div>
   ${(() => { const nx = items.filter(i => u.bookmarks.includes(i.id) && !u.done.includes(i.id)).slice(0, 3); return nx.length ? `<div class="h2" style="font-size:24px;margin-top:26px">كمّل من حيث وقفت</div><div class="grid">${nx.map(card).join('')}</div>` : ''; })()}
   <div class="h2" style="font-size:24px">المفضلة</div><div class="grid">${saved.map(card).join('') || `<div style="grid-column:1/-1">${emptyBox('لم تحفظ شيئاً بعد')}</div>`}</div>
-  <div class="box" style="margin-top:30px;max-width:460px"><b>الملف الشخصي</b><label class="f">الاسم</label><input id="pn" value="${esc(u.name)}"><label class="f">كلمة مرور جديدة (اختياري، 10 أحرف على الأقل)</label><input id="pp" type="password" autocomplete="new-password" minlength="10">
-  <p style="margin-top:12px"><button class="btn sm" id="ps">حفظ</button> <button class="btn w sm" id="lo">خروج</button></p></div></section></div>`, '/account');
-  $('#ps').onclick = async () => { if ($('#pp').value && $('#pp').value.length < 10) return toast('كلمة المرور 10 أحرف على الأقل'); try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: $('#pn').value, password: $('#pp').value }) }; toast('تم الحفظ'); $('#pp').value = ''; } catch (e) { toast(e.message); } };
-  $('#lo').onclick = async () => { await api('/me/logout', 'POST').catch(() => { }); S.token = ''; S.user = null; localStorage.removeItem('kt_token'); location.hash = '#/'; };
+  <div class="pfx"><aside class="pfi"><div class="av" style="background:${persona() && PERSONAS[persona()] ? PERSONAS[persona()].color : 'var(--yellow)'}">${esc((u.name || '?').trim().charAt(0).toUpperCase())}</div><div class="h2" style="font-size:24px">الملف الشخصي<small>${esc(u.email)}</small></div><p><span class="pill y">${u.plan === 'plus' ? 'بلس' : 'خطة مجانية'}</span></p><p class="pfn">تغيّر الاسم أو كلمة المرور من هنا. بريدك لا يتغيّر.</p></aside>
+  <form class="pff" id="pf" autocomplete="off"><label class="f" for="pn">الاسم</label><input id="pn" value="${esc(u.name)}" maxlength="60" required>
+  <label class="f" for="pp">كلمة مرور جديدة (اختياري)</label><div class="pwr"><input id="pp" type="password" autocomplete="new-password" minlength="10"><button type="button" class="pws" id="pw1" aria-label="إظهار كلمة المرور" aria-pressed="false">إظهار</button></div>
+  <div class="pwm" id="pm" hidden><i><u id="pmu"></u></i><small id="pmt"></small></div>
+  <label class="f" for="pc" id="pcl" hidden>أعد كتابة كلمة المرور</label><input id="pc" type="password" autocomplete="new-password" hidden>
+  <div class="err" id="pe" role="alert" aria-live="polite"></div>
+  <div class="pfb"><button class="btn red" id="ps" disabled>حفظ التغييرات</button><button type="button" class="btn w" id="lo">خروج</button></div></form></div></section></div>`, '/account');
+  const nm0 = u.name, pn = $('#pn'), pp = $('#pp'), pc = $('#pc'), ps = $('#ps'), pe = $('#pe');
+  const strength = v => { let s = Math.min(v.length / 10, 1) * 50; if (/[A-Za-z]/.test(v) && /\d/.test(v)) s += 25; if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s += 25; return Math.round(s); };
+  const upd = () => {
+    const v = pp.value, has = !!v; $('#pm').hidden = !has; pc.hidden = $('#pcl').hidden = !has;
+    if (has) { const s = strength(v); $('#pmu').style.width = s + '%'; $('#pmu').style.background = v.length < 10 ? 'var(--red)' : s < 75 ? 'var(--yellow)' : '#3a9a52'; $('#pmt').textContent = v.length < 10 ? `${v.length} / 10 أحرف على الأقل` : s < 75 ? 'مقبولة، زوّد أرقام أو رموز' : 'قوية'; }
+    const nameOk = pn.value.trim().length >= 2, dirty = pn.value.trim() !== nm0 || has;
+    ps.disabled = !(nameOk && dirty); pe.textContent = '';
+  };
+  pn.oninput = pp.oninput = pc.oninput = upd;
+  $('#pw1').onclick = e => { const sh = pp.type === 'password'; pp.type = pc.type = sh ? 'text' : 'password'; e.target.textContent = sh ? 'إخفاء' : 'إظهار'; e.target.setAttribute('aria-pressed', sh); };
+  $('#pf').onsubmit = async e => {
+    e.preventDefault(); if (ps.disabled) return;
+    if (pp.value && pp.value.length < 10) { pe.textContent = 'كلمة المرور 10 أحرف على الأقل'; return pp.focus(); }
+    if (pp.value && pp.value !== pc.value) { pe.textContent = 'كلمتا المرور غير متطابقتين'; return pc.focus(); }
+    ps.disabled = true; ps.textContent = 'جارٍ الحفظ...';
+    try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: pn.value.trim(), password: pp.value }) }; toast(pp.value ? 'تم حفظ الاسم وكلمة المرور' : 'تم الحفظ'); pAccount(); }
+    catch (er) { pe.textContent = er.message; ps.textContent = 'حفظ التغييرات'; ps.disabled = false; }
+  };
+  let lt; $('#lo').onclick = async e => {
+    const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'متأكد؟ اضغط تاني للخروج'; clearTimeout(lt); lt = setTimeout(() => { delete b.dataset.s; b.textContent = 'خروج'; }, 3500); return; }
+    await api('/me/logout', 'POST').catch(() => { }); S.token = ''; S.user = null; localStorage.removeItem('kt_token'); location.hash = '#/';
+  };
 }
 function pPlans() {
   const s = S.home.settings;

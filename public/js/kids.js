@@ -33,7 +33,7 @@ function pKids() {
   let tab = 'know', tp = '', q = 0, stars = 0, round = [];
   const newRound = () => { round = KQ.map((x, i) => i).sort(() => Math.random() - .5).slice(0, 5); q = 0; stars = 0; };
   newRound();
-  const prog = () => { const p = Math.round(st.read.length / KFACTS.length * 100); return `<div class="kp"><div><b>${st.read.length}</b> من ${KFACTS.length} معلومة قرأتها<i><u style="width:${p}%"></u></i></div><div class="kb"><b>${st.best}</b> أحسن نتيجة</div></div>`; };
+  const prog = () => { const p = Math.round(st.read.length / KFACTS.length * 100); return `<div class="kgp"><div><b>${st.read.length}</b> من ${KFACTS.length} معلومة قرأتها<i><u style="width:${p}%"></u></i></div><div class="kgb"><b>${st.best}</b> أحسن نتيجة</div></div>`; };
   const know = () => {
     const list = KFACTS.map((f, i) => ({ f, i })).filter(x => !tp || x.f[0] === tp);
     return `<div class="bar strip kt" id="kt" role="group" aria-label="الموضوع">${KT.map(([k, n]) => `<span class="chip${tp === k ? ' on' : ''}" role="button" tabindex="0" aria-pressed="${tp === k}" data-t="${k}">${n}</span>`).join('')}<span class="chip kr" role="button" tabindex="0" id="krn">معلومة عشوائية</span></div>
@@ -61,7 +61,7 @@ function pKids() {
     const kf = document.querySelector('.kf');
     if (kf) kf.onclick = e => {
       const b = e.target.closest('.kc'); if (!b) return; const o = b.classList.toggle('open'); b.setAttribute('aria-expanded', o);
-      const i = Number(b.dataset.i); if (o && !st.read.includes(i)) { st.read.push(i); kSave(st); b.classList.add('rd'); const p = document.querySelector('.kp'); if (p) p.outerHTML = prog(); if (st.read.length === KFACTS.length) { addXp(10, 'kids-read:' + dayKey()); toast('قرأت كل المعلومات، برافو!'); } }
+      const i = Number(b.dataset.i); if (o && !st.read.includes(i)) { st.read.push(i); kSave(st); b.classList.add('rd'); const p = document.querySelector('.kgp'); if (p) p.outerHTML = prog(); if (st.read.length === KFACTS.length) { addXp(10, 'kids-read:' + dayKey()); toast('قرأت كل المعلومات، برافو!'); } }
     };
     const ka = document.querySelector('.ka'); if (ka) ka.onclick = e => {
       const b = e.target.closest('[data-a]'); if (!b) return; const k = KQ[round[q]], ok = Number(b.dataset.a) === k[2];
