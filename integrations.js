@@ -4,7 +4,7 @@ const get = async (env, k, d) => (await env.KV.get(k, 'json')) ?? d;
 const put = (env, k, v, o) => env.KV.put(k, JSON.stringify(v), o);
 const rid = () => [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
 export const YT_SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.force-ssl', 'https://www.googleapis.com/auth/yt-analytics.readonly', 'https://www.googleapis.com/auth/youtube.readonly'];
-export const TT_SCOPES = ['user.info.basic', 'video.upload', 'video.publish'];
+export const TT_SCOPES = ['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list', 'video.upload', 'video.publish'];
 const form = o => new URLSearchParams(o).toString();
 const redirectUri = (origin, prov) => `${origin}/api/oauth/${prov}/callback`;
 
@@ -90,7 +90,7 @@ export async function ytSync(env, rules, { dry = false } = {}) {
     const s = th.snippet, c = s.topLevelComment.snippet; if (seen.has(th.id) || s.totalReplyCount > 0 || c.authorChannelId?.value === y.channelId) continue;
     const r = rules.find(r => r.on && r.keywords.some(k => k && c.textDisplay.toLowerCase().includes(k.toLowerCase())));
     const row = { id: th.id, video: s.videoId, by: c.authorDisplayName, text: c.textDisplay.slice(0, 200), rule: r?.id || null, replied: false };
-    if (r && !dry) { await yApi(env, 'comments?part=snippet', { method: 'POST', json: { snippet: { parentId: th.id, textOriginal: r.reply } } }); r.hits = (r.hits || 0) + 1; replied++; row.replied = true; seen.add(th.id); }
+    if (r && !dry) { await yApi(env, 'comments?part=snippet', { method: 'POST', json: { snippet: { parentId: th.id, textOriginal: r.reply } } }); r.hits = (r.hits || 0) + 1; replied++; row.replied = true; seen.add(th.id); await rlog(env, { platform: 'youtube', mode: 'rule', cid: th.id, by: row.by, text: row.text, reply: r.reply.slice(0, 300) }); }
     else if (!r) seen.add(th.id);
     out.push(row);
   }
@@ -235,4 +235,66 @@ export async function qRunDue(env, ctxWait) {
   const stale = q.filter(x => x.locked && now - x.locked > 20 * 60 * 1000); for (const it of stale) await qSave(env, it.id, x => { delete x.locked; (x.targets || []).forEach(k => { if (!x.results?.[k]) (x.results = x.results || {})[k] = { state: 'err', err: 'انقطعت العملية قبل أن تنتهي', at: now }; }); x.status = qSummary(x); });
   if (ctxWait) ctxWait(Promise.allSettled(jobs)); else await Promise.allSettled(jobs);
   return { due: due.length, stale: stale.length };
+}
+
+
+// ---- YouTube: everything the API gives for the channel ----
+const sf = async (f, d) => { try { return await f(); } catch (e) { return d === undefined ? { error: String(e.message).slice(0, 160) } : d; } };
+const ago = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+export async function ytOverview(env) {
+  const ch = await yApi(env, 'channels?part=snippet,statistics,contentDetails,brandingSettings,status&mine=true'); const c = ch.items?.[0]; if (!c) throw new Error('لا توجد قناة');
+  const up = c.contentDetails?.relatedPlaylists?.uploads; let ids = [];
+  if (up) { const pl = await sf(() => yApi(env, 'playlistItems?' + form({ part: 'contentDetails', playlistId: up, maxResults: 30 })), { items: [] }); ids = (pl.items || []).map(x => x.contentDetails.videoId); }
+  let videos = [];
+  if (ids.length) { const v = await yApi(env, 'videos?' + form({ part: 'snippet,statistics,contentDetails,status', id: ids.join(',') })); videos = (v.items || []).map(x => ({ id: x.id, title: x.snippet.title, at: x.snippet.publishedAt, thumb: x.snippet.thumbnails?.medium?.url || '', dur: x.contentDetails.duration, privacy: x.status?.privacyStatus, views: +x.statistics.viewCount || 0, likes: +x.statistics.likeCount || 0, comments: +x.statistics.commentCount || 0 })); }
+  return { channel: { id: c.id, title: c.snippet.title, handle: c.snippet.customUrl || '', desc: (c.snippet.description || '').slice(0, 400), country: c.snippet.country || '', since: c.snippet.publishedAt, thumb: c.snippet.thumbnails?.default?.url || '', subs: c.statistics.hiddenSubscriberCount ? null : +c.statistics.subscriberCount, views: +c.statistics.viewCount || 0, videos: +c.statistics.videoCount || 0, keywords: (c.brandingSettings?.channel?.keywords || '').slice(0, 200) }, videos };
+}
+export async function ytDeep(env, days = 28) {
+  const rp = async (o) => { const r = await yApi(env, 'https://youtubeanalytics.googleapis.com/v2/reports?' + form({ ids: 'channel==MINE', startDate: ago(days), endDate: ago(0), ...o })); return { cols: (r.columnHeaders || []).map(c => c.name), rows: r.rows || [] }; };
+  const [daily, top, traffic, countries, demo, devices] = await Promise.all([
+    sf(() => rp({ metrics: 'views,estimatedMinutesWatched,averageViewDuration,likes,comments,shares,subscribersGained,subscribersLost', dimensions: 'day', sort: 'day' })),
+    sf(() => rp({ metrics: 'views,estimatedMinutesWatched,likes,comments', dimensions: 'video', sort: '-views', maxResults: 10 })),
+    sf(() => rp({ metrics: 'views,estimatedMinutesWatched', dimensions: 'insightTrafficSourceType', sort: '-views' })),
+    sf(() => rp({ metrics: 'views,estimatedMinutesWatched', dimensions: 'country', sort: '-views', maxResults: 10 })),
+    sf(() => rp({ metrics: 'viewerPercentage', dimensions: 'ageGroup,gender', sort: 'ageGroup' })),
+    sf(() => rp({ metrics: 'views', dimensions: 'deviceType', sort: '-views' })),
+  ]);
+  return { days, daily, top, traffic, countries, demo, devices };
+}
+const rlog = async (env, e) => { const l = await get(env, 'replylog', []); l.unshift({ t: Date.now(), ...e }); await put(env, 'replylog', l.slice(0, 300)); };
+export const replyLog = env => get(env, 'replylog', []);
+export async function ytComments(env) {
+  const t = await get(env, 'oauth', {}); const y = t.youtube; if (!y) throw new Error('يوتيوب غير مربوط');
+  const d = await yApi(env, 'commentThreads?' + form({ part: 'snippet,replies', allThreadsRelatedToChannelId: y.channelId, maxResults: 50, order: 'time', textFormat: 'plainText' }));
+  const titles = {}; const vids = [...new Set((d.items || []).map(x => x.snippet.videoId))].slice(0, 50);
+  if (vids.length) { const v = await sf(() => yApi(env, 'videos?' + form({ part: 'snippet', id: vids.join(',') })), { items: [] }); for (const x of v.items || []) titles[x.id] = x.snippet.title; }
+  const mine = id => id === y.channelId;
+  return (d.items || []).map(th => { const s = th.snippet, c = s.topLevelComment.snippet; const reps = (th.replies?.comments || []).map(r => ({ id: r.id, by: r.snippet.authorDisplayName, mine: mine(r.snippet.authorChannelId?.value), text: r.snippet.textDisplay, at: r.snippet.publishedAt, likes: r.snippet.likeCount || 0 })); return { id: th.id, video: s.videoId, vtitle: titles[s.videoId] || '', by: c.authorDisplayName, mine: mine(c.authorChannelId?.value), text: c.textDisplay, at: c.publishedAt, likes: c.likeCount || 0, nrep: s.totalReplyCount || 0, replies: reps, answered: reps.some(r => r.mine) || mine(c.authorChannelId?.value) }; });
+}
+export async function ytReply(env, parentId, text, mode = 'manual', ctx = {}) {
+  text = String(text || '').trim().slice(0, 500); if (!text) throw new Error('الردّ فارغ');
+  const r = await yApi(env, 'comments?part=snippet', { method: 'POST', json: { snippet: { parentId, textOriginal: text } } });
+  await rlog(env, { platform: 'youtube', mode, cid: parentId, by: ctx.by || '', video: ctx.video || '', text: (ctx.text || '').slice(0, 200), reply: text, rid: r.id });
+  return { id: r.id };
+}
+// auto mode (cron): AI replies to new unanswered comments, a few per run
+export async function ytAiAuto(env) {
+  const cfg = await aiCfg(env); if (cfg.mode !== 'auto' || !cfg.provider || !(await aiConfigured(env))[cfg.provider]) return { skipped: true };
+  const seen = new Set(await get(env, 'yt:aiseen', [])); let n = 0;
+  for (const c of await ytComments(env)) {
+    if (n >= 5) break; if (c.answered || c.mine || seen.has(c.id)) continue; seen.add(c.id);
+    try { const r = await aiReply(env, cfg, { comment: c.text, video: c.vtitle, by: c.by }); if (r.skip) { await rlog(env, { platform: 'youtube', mode: 'ai-skip', cid: c.id, by: c.by, video: c.vtitle, text: c.text.slice(0, 200), reply: '' }); continue; } await ytReply(env, c.id, r.text, 'ai-auto', { by: c.by, video: c.vtitle, text: c.text }); n++; }
+    catch (e) { await rlog(env, { platform: 'youtube', mode: 'ai-error', cid: c.id, by: c.by, text: c.text.slice(0, 120), reply: '', err: String(e.message).slice(0, 160) }); }
+  }
+  await put(env, 'yt:aiseen', [...seen].slice(-800)); return { replied: n };
+}
+
+// ---- TikTok: what the Display API returns (needs user.info.stats + video.list scopes) ----
+export async function ttOverview(env) {
+  const tok = await ttToken(env); const t = await get(env, 'oauth', {}); const sc = String(t.tiktok?.scope || '');
+  const missing = ['user.info.stats', 'video.list'].filter(s => !sc.includes(s));
+  const H = { authorization: 'Bearer ' + tok };
+  const u = await sf(async () => { const r = await (await fetch('https://open.tiktokapis.com/v2/user/info/?fields=' + (sc.includes('user.info.stats') ? 'open_id,avatar_url,display_name,bio_description,profile_deep_link,is_verified,follower_count,following_count,likes_count,video_count' : 'open_id,avatar_url,display_name'), { headers: H })).json(); if (r.error?.code && r.error.code !== 'ok') throw new Error(r.error.message || r.error.code); return r.data?.user || {}; });
+  const v = sc.includes('video.list') ? await sf(async () => { const r = await (await fetch('https://open.tiktokapis.com/v2/video/list/?fields=id,title,video_description,create_time,cover_image_url,share_url,duration,view_count,like_count,comment_count,share_count', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: JSON.stringify({ max_count: 20 }) })).json(); if (r.error?.code && r.error.code !== 'ok') throw new Error(r.error.message || r.error.code); return r.data?.videos || []; }) : [];
+  return { user: u, videos: Array.isArray(v) ? v : [], videosError: v?.error || '', missing };
 }

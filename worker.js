@@ -406,6 +406,12 @@ export default {
         if (p === '/api/admin/ai/models' && m === 'POST') { if (!IG.AI_PROVIDERS[body.provider]) return err('مزوّد غير معروف', 400); return J(await IG.aiModels(env, body.provider)); }
         if (p === '/api/admin/ai/draft' && m === 'POST') { const c = await IG.aiCfg(env); if (IG.AI_PROVIDERS[body.provider]) c.provider = body.provider; if (typeof body.model === 'string' && body.model) c.model = clip(body.model, 80).replace(/[^\w.\-:\/]/g, ''); if (typeof body.tone === 'string' && body.tone) c.tone = clip(body.tone, 800); return J(await IG.aiReply(env, c, { comment: clip(body.comment, 600), video: clip(body.video, 120), by: clip(body.by, 40) })); }
         if (p === '/api/admin/yt/analytics') return J(await IG.ytAnalytics(env, Number(url.searchParams.get('days')) || 28));
+        if (p === '/api/admin/yt/overview') return J(await IG.ytOverview(env));
+        if (p === '/api/admin/yt/deep') return J(await IG.ytDeep(env, Math.min(90, Math.max(7, Number(url.searchParams.get('days')) || 28))));
+        if (p === '/api/admin/yt/comments') return J({ items: await IG.ytComments(env) });
+        if (p === '/api/admin/yt/reply' && m === 'POST') { const r = await IG.ytReply(env, clip(body.id, 80), body.text, body.mode === 'ai-review' ? 'ai-review' : 'manual', { by: clip(body.by, 40), video: clip(body.video, 100), text: clip(body.ctext, 200) }); await log(env, u.email, 'ردّ على تعليق يوتيوب'); return J(r); }
+        if (p === '/api/admin/yt/replylog') return J({ items: await IG.replyLog(env) });
+        if (p === '/api/admin/tt/overview') return J(await IG.ttOverview(env));
         if (p === '/api/admin/yt/sync' && m === 'POST') { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules, { dry: !!body.dry }); if (!body.dry) await put(env, 'rules', rules); return J(r); }
         if (p === '/api/admin/yt/upload' && m === 'POST') { const r = await IG.ytUpload(env, body); await log(env, u.email, 'رفع فيديو يوتيوب ' + r.id); return J(r); }
         if (p === '/api/admin/tt/upload' && m === 'POST') { const r = await IG.ttUpload(env, body); await log(env, u.email, 'رفع فيديو تيك توك'); return J(r); }
@@ -427,6 +433,7 @@ export default {
   },
   async scheduled(ev, env) {
     try { await IG.qRunDue(env); } catch (e) { }
+    try { await IG.ytAiAuto(env); } catch (e) { }
     const cfg = await get(env, 'intcfg', { ytAuto: false }); if (!cfg.ytAuto) return;
     try { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules); if (r.replied) await put(env, 'rules', rules); } catch (e) { const t = await get(env, 'oauth', {}); if (t.youtube) { t.youtube.err = e.message; await put(env, 'oauth', t); } }
   },
