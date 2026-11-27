@@ -28,9 +28,25 @@ async function init(env) {
   await put(env, 'items', ITEMS); await put(env, 'rules', RULES); await put(env, 'settings', SETTINGS);
   await put(env, 'cats', CATS); await env.KV.put('inited', '1'); await env.KV.put('fixdates', '0'); await env.KV.put('covers1', '1'); const it = ITEMS.map((x, k) => ({ ...x, created: Date.now() - k * 3600000 })); await put(env, 'items', it);
 }
+const HB = {}; let hN = 0, hLast = Date.now(), hBusy = false;
 async function hit(env, key, n = 1) {
-  const k = 'stat:' + day(); const s = await get(env, k, {});
-  s[key] = (s[key] || 0) + n; try { await put(env, k, s, { expirationTtl: 86400 * 120 }); } catch (e) { }
+  HB[key] = (HB[key] || 0) + n; hN++;
+  if (hBusy || (hN < 25 && Date.now() - hLast < 600000)) return;
+  hBusy = true; const B = { ...HB }; for (const k in HB) delete HB[k]; hN = 0; hLast = Date.now();
+  try { const k = 'stat:' + day(); const s = await get(env, k, {}); for (const x in B) s[x] = (s[x] || 0) + B[x]; await put(env, k, s, { expirationTtl: 86400 * 120 }); } catch (e) { } finally { hBusy = false; }
+}
+// Views: no KV write per visit. Counted in memory (de-duplicated per visitor+item for 30 min) and flushed in one batch
+// (items + daily stats) every 25 views or 10 minutes. Counts are approximate: an isolate that dies loses its pending views.
+const VB = {}, SEEN = new Map(); let vN = 0, vLast = Date.now(), vBusy = false;
+function viewOnce(k) { const n = Date.now(), t = SEEN.get(k); if (t && n - t < 1800000) return false; if (SEEN.size > 5000) SEEN.clear(); SEEN.set(k, n); return true; }
+async function countView(env, id) {
+  VB[id] = (VB[id] || 0) + 1; vN++;
+  if (vBusy || (vN < 25 && Date.now() - vLast < 600000)) return;
+  vBusy = true; const B = { ...VB }, N = vN; for (const k in VB) delete VB[k]; vN = 0; vLast = Date.now();
+  try {
+    const items = await get(env, 'items', []); for (const it of items) if (B[it.id]) it.views = (it.views || 0) + B[it.id]; await put(env, 'items', items);
+    const k = 'stat:' + day(); const s = await get(env, k, {}); s.views = (s.views || 0) + N; for (const id in B) s['v:' + id] = (s['v:' + id] || 0) + B[id]; await put(env, k, s, { expirationTtl: 86400 * 120 });
+  } catch (e) { } finally { vBusy = false; }
 }
 async function log(env, who, what) {
   const l = await get(env, 'log', []); l.unshift({ t: Date.now(), who, what: clip(what, 200) });
@@ -123,9 +139,7 @@ export default {
     if ((mm = p.match(/^\/api\/items\/([\w-]+)$/)) && m === 'GET') {
       const items = await get(env, 'items', []); const it = items.find(i => i.id === mm[1]);
       if (!it || (!live(it) && !isStaff(u))) return err('not found', 404);
-      if (live(it) && await rate(env, ip + mm[1], 'view', 1, 1800)) {
-        it.views++; try { await put(env, 'items', items); } catch (e) { } hit(env, 'views'); hit(env, 'v:' + it.id);
-      }
+      if (live(it) && viewOnce(ip + mm[1])) { it.views += 1; await countView(env, it.id); }
       const comments = (await get(env, 'comments:' + it.id, [])).filter(c => c.status === 'ok' || isStaff(u) || (u && c.email === u.email)).map(c => cview(c, u));
       const rt = await get(env, 'ratings:' + it.id, {}); it.mine = u ? (rt[u.email] || 0) : 0;
       const related = items.filter(i => i.cat === it.cat && i.id !== it.id && live(i)).slice(0, 3).map(slim);
