@@ -24,7 +24,7 @@ export const STATIC_ITEMS = [
   "minutes": 4,
   "youtube": "tXzz7uf9-7U",
   "short": "",
-  "tiktok": "",
+  "tiktok": "https://www.tiktok.com/@elne7aya/video/7712816140254235922",
   "cover": "/covers/ep4.jpg",
   "ep": 4,
   "publishAt": 1795802400000
