@@ -126,7 +126,7 @@ export const AI_PROVIDERS = {
   anthropic: { name: 'Anthropic (Claude)', env: 'ANTHROPIC_API_KEY', model: 'claude-3-5-haiku-latest' },
   openrouter: { name: 'OpenRouter (نماذج متعددة)', env: 'OPENROUTER_API_KEY', model: 'openai/gpt-4o-mini' },
 };
-export const AI_DEFAULT = { provider: '', model: '', mode: 'off', tone: 'ردّ بلهجة مصرية ودودة وقصيرة. اشكر صاحب التعليق، وجاوب على سؤاله إن كان واضحاً. لو السؤال محتاج بحث أو غير واضح، قل إننا سنتناوله في حلقة قادمة.', maxLen: 280, signature: '' };
+export const AI_DEFAULT = { provider: '', model: '', mode: 'off', tone: 'ردّ بلهجة مصرية ودودة وقصيرة. اشكر صاحب التعليق، وجاوب على سؤاله إن كان واضحاً. لو السؤال محتاج بحث أو غير واضح، قل إننا سنتناوله في حلقة قادمة.', maxLen: 280, signature: '', auto: { interval: 5, delay: 2, perRun: 3, dailyCap: 30, maxAgeH: 24, quiet: false, qFrom: 0, qTo: 7 } };
 export const AI_LINKS = { gemini: 'https://aistudio.google.com/usage', openai: 'https://platform.openai.com/usage', anthropic: 'https://console.anthropic.com/settings/usage', openrouter: 'https://openrouter.ai/activity' };
 // keys saved from the admin are AES-GCM encrypted in KV; the encryption key is derived from a Worker secret (KEY_ENC, else ADMIN_SETUP_KEY)
 const encSecret = env => String(env.KEY_ENC || env.ADMIN_SETUP_KEY || '');
@@ -179,7 +179,7 @@ export async function aiTest(env, prov, model) {
   for (const id of ms.cands.slice(0, 4)) { try { await aiReply(env, { ...base, model: id }, ex); await put(env, 'aimodel:' + prov, { id, at: Date.now() }); return { ok: true, model: id, auto: true }; } catch (e) { tried.push(id); last = e.message; } }
   return { ok: false, error: (tried.length ? 'جرّبت ' + tried.join(' و ') + ' ولم ينجح أيٌّ منها. ' : '') + last };
 }
-export async function aiCfg(env) { return { ...AI_DEFAULT, ...(await get(env, 'aicfg', {})) }; }
+export async function aiCfg(env) { const s = await get(env, 'aicfg', {}); return { ...AI_DEFAULT, ...s, auto: { ...AI_DEFAULT.auto, ...(s.auto || {}) } }; }
 const clean = (t, max) => String(t || '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 export async function aiReply(env, cfg, o) { let tk = 0; try { const r = await aiReply0(env, cfg, o, n => { tk = n; }); await aiBump(env, cfg.provider, tk); return r; } catch (e) { if (AI_PROVIDERS[cfg.provider]) await aiBump(env, cfg.provider, tk, e.message); throw e; } }
 async function aiReply0(env, cfg, { comment, video = '', by = '' }, setTk) {
@@ -263,11 +263,11 @@ export async function ytDeep(env, days = 28) {
 }
 const rlog = async (env, e) => { const l = await get(env, 'replylog', []); l.unshift({ t: Date.now(), ...e }); await put(env, 'replylog', l.slice(0, 300)); };
 export const replyLog = env => get(env, 'replylog', []);
-export async function ytComments(env) {
+export async function ytComments(env, { titles: wantT = true } = {}) {
   const t = await get(env, 'oauth', {}); const y = t.youtube; if (!y) throw new Error('يوتيوب غير مربوط');
   const d = await yApi(env, 'commentThreads?' + form({ part: 'snippet,replies', allThreadsRelatedToChannelId: y.channelId, maxResults: 50, order: 'time', textFormat: 'plainText' }));
   const titles = {}; const vids = [...new Set((d.items || []).map(x => x.snippet.videoId))].slice(0, 50);
-  if (vids.length) { const v = await sf(() => yApi(env, 'videos?' + form({ part: 'snippet', id: vids.join(',') })), { items: [] }); for (const x of v.items || []) titles[x.id] = x.snippet.title; }
+  if (wantT && vids.length) { const v = await sf(() => yApi(env, 'videos?' + form({ part: 'snippet', id: vids.join(',') })), { items: [] }); for (const x of v.items || []) titles[x.id] = x.snippet.title; }
   const mine = id => id === y.channelId;
   return (d.items || []).map(th => { const s = th.snippet, c = s.topLevelComment.snippet; const reps = (th.replies?.comments || []).map(r => ({ id: r.id, by: r.snippet.authorDisplayName, mine: mine(r.snippet.authorChannelId?.value), text: r.snippet.textDisplay, at: r.snippet.publishedAt, likes: r.snippet.likeCount || 0 })); return { id: th.id, video: s.videoId, vtitle: titles[s.videoId] || '', by: c.authorDisplayName, mine: mine(c.authorChannelId?.value), text: c.textDisplay, at: c.publishedAt, likes: c.likeCount || 0, nrep: s.totalReplyCount || 0, replies: reps, answered: reps.some(r => r.mine) || mine(c.authorChannelId?.value) }; });
 }
@@ -277,16 +277,25 @@ export async function ytReply(env, parentId, text, mode = 'manual', ctx = {}) {
   await rlog(env, { platform: 'youtube', mode, cid: parentId, by: ctx.by || '', video: ctx.video || '', text: (ctx.text || '').slice(0, 200), reply: text, rid: r.id });
   return { id: r.id };
 }
-// auto mode (cron): AI replies to new unanswered comments, a few per run
-export async function ytAiAuto(env) {
-  const cfg = await aiCfg(env); if (cfg.mode !== 'auto' || !cfg.provider || !(await aiConfigured(env))[cfg.provider]) return { skipped: true };
-  const seen = new Set(await get(env, 'yt:aiseen', [])); let n = 0;
-  for (const c of await ytComments(env)) {
-    if (n >= 5) break; if (c.answered || c.mine || seen.has(c.id)) continue; seen.add(c.id);
-    try { const r = await aiReply(env, cfg, { comment: c.text, video: c.vtitle, by: c.by }); if (r.skip) { await rlog(env, { platform: 'youtube', mode: 'ai-skip', cid: c.id, by: c.by, video: c.vtitle, text: c.text.slice(0, 200), reply: '' }); continue; } await ytReply(env, c.id, r.text, 'ai-auto', { by: c.by, video: c.vtitle, text: c.text }); n++; }
+// auto mode (cron runs every minute; the schedule below decides when a run really happens)
+const cairoHour = t => +new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: 'numeric', hourCycle: 'h23' }).format(new Date(t));
+const cairoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date(t));
+export async function ytAiAuto(env, now = Date.now()) {
+  const cfg = await aiCfg(env); if (cfg.mode !== 'auto' || !cfg.provider) return { skipped: 'off' };
+  const A = cfg.auto, iv = Math.min(1440, Math.max(1, +A.interval || 5)); if (Math.floor(now / 60000) % iv !== 0) return { skipped: 'not-due' };
+  if (A.quiet) { const h = cairoHour(now), f = +A.qFrom, t = +A.qTo; if (f !== t && (f < t ? h >= f && h < t : h >= f || h < t)) return { skipped: 'quiet' }; }
+  if (!(await aiConfigured(env))[cfg.provider]) return { skipped: 'no-key' };
+  const today = cairoDay(now); const left = Math.max(0, (+A.dailyCap || 0) - (await replyLog(env)).filter(e => e.mode === 'ai-auto' && cairoDay(e.t) === today).length); if (!left) return { skipped: 'cap' };
+  const seen = new Set(await get(env, 'yt:aiseen', [])); let n = 0, ch = false; const max = Math.min(left, Math.min(10, Math.max(1, +A.perRun || 3)));
+  const cs = await ytComments(env, { titles: false });
+  for (const c of cs) {
+    if (n >= max) break; if (c.answered || c.mine || seen.has(c.id)) continue;
+    const age = now - Date.parse(c.at); if (age > (+A.maxAgeH || 24) * 3600e3) { seen.add(c.id); ch = true; continue; } if (age < (+A.delay || 0) * 60e3) continue;
+    seen.add(c.id); ch = true;
+    try { const r = await aiReply(env, cfg, { comment: c.text, video: c.vtitle || c.video, by: c.by }); if (r.skip) { await rlog(env, { platform: 'youtube', mode: 'ai-skip', cid: c.id, by: c.by, text: c.text.slice(0, 200), reply: '' }); continue; } await ytReply(env, c.id, r.text, 'ai-auto', { by: c.by, video: c.vtitle || c.video, text: c.text }); n++; }
     catch (e) { await rlog(env, { platform: 'youtube', mode: 'ai-error', cid: c.id, by: c.by, text: c.text.slice(0, 120), reply: '', err: String(e.message).slice(0, 160) }); }
   }
-  await put(env, 'yt:aiseen', [...seen].slice(-800)); return { replied: n };
+  if (ch) await put(env, 'yt:aiseen', [...seen].slice(-800)); return { replied: n };
 }
 
 // ---- TikTok: what the Display API returns (needs user.info.stats + video.list scopes) ----
