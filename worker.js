@@ -68,7 +68,7 @@ async function saveItem(env, u, body) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url); const p = url.pathname; const m = req.method;
     const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     if (p === '/sitemap.xml') {
@@ -412,14 +412,21 @@ export default {
       } catch (x) { return err(x.message, 502); }
     }
     if (p === '/api/admin/queue' && m === 'POST') {
-      const q = await get(env, 'queue', []);
-      if (body.action === 'delete') { await put(env, 'queue', q.filter(x => x.id !== body.id)); return J({ ok: true }); }
-      q.unshift({ id: rid(5), title: clip(body.title, 140), caption: clip(body.caption, 600), targets: (body.targets || []).filter(t => ['youtube', 'tiktok'].includes(t)), when: clip(body.when, 30), status: 'جاهز للنشر عند ربط الحساب', t: Date.now() });
-      await put(env, 'queue', q.slice(0, 100)); await log(env, u.email, 'إضافة لقائمة النشر'); return J({ ok: true });
+      let q = await get(env, 'queue', []);
+      if (body.action === 'delete') { q = q.filter(x => x.id !== body.id); await put(env, 'queue', q); return J({ ok: true }); }
+      if (body.action === 'run') return J({ ok: true, ...(await IG.qRunDue(env)) });
+      if (body.action === 'now' || body.action === 'retry') { const it = q.find(x => x.id === body.id); if (!it) return err('غير موجود', 404); if (it.locked && Date.now() - it.locked < 20 * 60 * 1000) return err('قيد النشر الآن', 409); if (body.action === 'retry') { for (const k of it.targets) if (it.results?.[k]?.state === 'err') delete it.results[k]; } it.at = it.at && it.at > Date.now() && body.action === 'now' ? Date.now() : it.at; await put(env, 'queue', q); ctx.waitUntil(IG.qPublish(env, it.id)); await log(env, u.email, 'نشر من القائمة: ' + clip(it.title, 40)); return J({ ok: true }); }
+      const targets = (Array.isArray(body.targets) ? body.targets : []).filter(t => ['youtube', 'tiktok'].includes(t));
+      if (!clip(body.title, 140).trim()) return err('اكتب العنوان', 400); if (!targets.length) return err('اختر منصة واحدة على الأقل', 400);
+      if (!/^https:\/\/[^\s]+$/.test(String(body.videoUrl || ''))) return err('رابط الفيديو لازم يبدأ بـ https', 400);
+      const at = body.at ? +body.at : 0; if (body.at && !(at > 0)) return err('وقت غير صحيح', 400);
+      q.unshift({ id: rid(5), title: clip(body.title, 100), caption: clip(body.caption, 2000), videoUrl: String(body.videoUrl).slice(0, 600), privacy: ['private', 'unlisted', 'public'].includes(body.privacy) ? body.privacy : 'private', ttMode: body.ttMode === 'direct' ? 'direct' : 'draft', targets, at, results: {}, status: at > Date.now() ? 'scheduled' : 'ready', t: Date.now() });
+      await put(env, 'queue', q.slice(0, 100)); await log(env, u.email, 'إضافة لقائمة النشر'); return J({ ok: true, id: q[0].id });
     }
     return err('not found', 404);
   },
   async scheduled(ev, env) {
+    try { await IG.qRunDue(env); } catch (e) { }
     const cfg = await get(env, 'intcfg', { ytAuto: false }); if (!cfg.ytAuto) return;
     try { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules); if (r.replied) await put(env, 'rules', rules); } catch (e) { const t = await get(env, 'oauth', {}); if (t.youtube) { t.youtube.err = e.message; await put(env, 'oauth', t); } }
   },

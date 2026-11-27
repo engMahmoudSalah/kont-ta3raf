@@ -209,3 +209,30 @@ async function aiReply0(env, cfg, { comment, video = '', by = '' }, setTk) {
 }
 
 const aiCfgLazy = env => aiCfg(env);
+
+
+// ---- dual publish queue: one item, both platforms, per-platform result ----
+const PLAT = { youtube: 'يوتيوب', tiktok: 'تيك توك' };
+export const qSummary = q => { const r = q.results || {}, st = (q.targets || []).map(t => r[t]?.state || 'pending'); if (q.locked) return 'publishing'; if (st.every(s => s === 'ok')) return 'done'; if (st.some(s => s === 'ok') && st.some(s => s === 'err')) return 'partial'; if (st.some(s => s === 'err')) return 'failed'; return q.at && q.at > Date.now() ? 'scheduled' : 'ready'; };
+async function qSave(env, id, fn) { const q = await get(env, 'queue', []); const it = q.find(x => x.id === id); if (it) { fn(it); await put(env, 'queue', q); } return it; }
+export async function qPublish(env, id, { only } = {}) {
+  const lock = await qSave(env, id, it => { it.locked = Date.now(); });
+  if (!lock) return;
+  const t = await get(env, 'oauth', {}); const it = lock, res = { ...(it.results || {}) };
+  const jobs = (it.targets || []).filter(k => res[k]?.state !== 'ok' && (!only || only === k)).map(async k => {
+    try {
+      if (k === 'youtube') { if (!t.youtube?.refresh) throw new Error('حساب يوتيوب غير مربوط'); const r = await ytUpload(env, { videoUrl: it.videoUrl, title: it.title, description: it.caption, privacy: it.privacy || 'private' }); res[k] = { state: 'ok', url: r.url, at: Date.now() }; }
+      else { if (!t.tiktok?.access) throw new Error('حساب تيك توك غير مربوط'); const r = await ttUpload(env, { videoUrl: it.videoUrl, title: it.caption || it.title, mode: it.ttMode || 'draft' }); res[k] = { state: 'ok', mode: r.mode, id: r.publishId, at: Date.now() }; }
+    } catch (e) { res[k] = { state: 'err', err: String(e.message).slice(0, 200), at: Date.now() }; }
+  });
+  await Promise.allSettled(jobs);
+  await qSave(env, id, x => { x.results = res; delete x.locked; x.tries = (x.tries || 0) + 1; x.status = qSummary(x); });
+}
+export async function qRunDue(env, ctxWait) {
+  const q = await get(env, 'queue', []), now = Date.now(); const due = q.filter(x => x.at && x.at <= now && !x.locked && !(x.results && Object.keys(x.results).length) && !x.status?.startsWith?.('done'));
+  const jobs = []; for (const it of due) jobs.push(qPublish(env, it.id));
+  // stale locks (a run that died) are released so they can be retried by hand
+  const stale = q.filter(x => x.locked && now - x.locked > 20 * 60 * 1000); for (const it of stale) await qSave(env, it.id, x => { delete x.locked; (x.targets || []).forEach(k => { if (!x.results?.[k]) (x.results = x.results || {})[k] = { state: 'err', err: 'انقطعت العملية قبل أن تنتهي', at: now }; }); x.status = qSummary(x); });
+  if (ctxWait) ctxWait(Promise.allSettled(jobs)); else await Promise.allSettled(jobs);
+  return { due: due.length, stale: stale.length };
+}
