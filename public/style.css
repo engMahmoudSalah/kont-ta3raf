@@ -703,3 +703,8 @@ main,.band,.tapeline{overflow-x:clip}html,body{overflow-x:clip}
 .xn{color:var(--grey);font-weight:700;margin:0 0 10px}
 footer{position:static!important}
 @media(min-width:701px){.sfrow>.sfb:last-child .sfp{inset-inline-start:auto;inset-inline-end:0}}
+/* v77 admin users */
+.us{align-items:flex-start}.us.off{opacity:.7}.av{width:46px;height:46px;border-radius:50%;background:var(--sun,#ffd23f);border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex:none}
+.un{font-size:17px}.ue{color:#555;font-size:14px;margin-top:2px;overflow-wrap:anywhere;text-align:start}.usl{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px}.usl select{width:auto;min-height:40px;font-size:15px;border:1.5px solid var(--ink);border-radius:10px;padding:0 8px;background:#fff}
+.us .ia{align-items:center}
+.ue{text-align:right!important}

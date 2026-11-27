@@ -175,12 +175,31 @@ async function aRules(el) {
   draw();
 }
 async function aUsers(el) {
-  const l = await api('/admin/users'), adm = S.user.role === 'admin';
-  el.innerHTML = `<div class="tw"><table class="tbl"><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>الخطة</th><th>التسجيل</th><th></th></tr>${l.map(u => `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${adm && u.email !== S.user.email ? `<select data-e="${esc(u.email)}" data-f="role">${['user', 'editor', 'admin'].map(r => `<option ${r === u.role ? 'selected' : ''} value="${r}">${{ user: 'مستخدم', editor: 'محرر', admin: 'أدمن' }[r]}</option>`).join('')}</select>` : { user: 'مستخدم', editor: 'محرر', admin: 'أدمن' }[u.role]}</td>
-  <td>${adm ? `<select data-e="${esc(u.email)}" data-f="plan">${['free', 'plus'].map(r => `<option ${r === u.plan ? 'selected' : ''} value="${r}">${r === 'free' ? 'مجاني' : 'بلس'}</option>`).join('')}</select>` : u.plan}</td><td>${date(u.created)}</td>
-  <td>${adm && u.email !== S.user.email ? `<button class="btn sm ${u.banned ? 'blue' : 'danger'}" data-b="${esc(u.email)}" data-v="${u.banned ? 0 : 1}">${u.banned ? 'رفع الحظر' : 'حظر'}</button>` : ''}</td></tr>`).join('')}</table></div>`;
-  el.onchange = async e => { const d = e.target.dataset; if (d.f) { await api('/admin/users', 'POST', { email: d.e, [d.f]: e.target.value }); toast('تم'); } };
-  el.onclick = async e => { const d = e.target.dataset; if (d.b) { await api('/admin/users', 'POST', { email: d.b, banned: d.v === '1' }); aUsers(el); } };
+  let l = await api('/admin/users'); const adm = S.user.role === 'admin', me = S.user.email;
+  const RN = { user: 'مستخدم', editor: 'محرر', admin: 'أدمن' }, PN = { free: 'مجاني', plus: 'بلس' }, SN = { on: 'نشط', ban: 'محظور' };
+  const f = { q: '', role: [], plan: [], st: [], sort: 'new' };
+  const stOf = u => u.banned ? 'ban' : 'on';
+  const act = u => (u.done || []).length + (u.bookmarks || []).length;
+  const set = async (u, patch, msg) => { try { await api('/admin/users', 'POST', { email: u.email, ...patch }); Object.assign(u, patch); toast(msg || 'تم'); } catch (e) { toast(e.message); } draw(); };
+  const draw = () => {
+    const c = fn => l.filter(fn).length;
+    const r = l.filter(u => (!f.role.length || f.role.includes(u.role)) && (!f.plan.length || f.plan.includes(u.plan)) && (!f.st.length || f.st.includes(stOf(u))) && (!f.q || (u.name + ' ' + u.email).toLowerCase().includes(f.q.toLowerCase())))
+      .sort((a, b) => f.sort === 'old' ? a.created - b.created : f.sort === 'name' ? a.name.localeCompare(b.name, 'ar') : f.sort === 'act' ? act(b) - act(a) : b.created - a.created);
+    const wk = Date.now() - 7 * 864e5;
+    el.innerHTML = `<div class="ikp"><button data-k="all"><b>${l.length}</b><span>كل الحسابات</span></button><button data-k="new"><b>${c(u => u.created > wk)}</b><span>جدد آخر 7 أيام</span></button><button data-k="plus"><b>${c(u => u.plan === 'plus')}</b><span>بلس</span></button><button data-k="ban"><b>${c(u => u.banned)}</b><span>محظورون</span></button></div>
+    <div id="sfh"></div><p class="icn">${r.length} من ${l.length}${adm ? '' : ' · العرض فقط (التعديل للأدمن)'}</p>
+    <div class="ilist">${r.map(u => `<div class="ig us${u.banned ? ' off' : ''}"><div class="av" aria-hidden="true">${esc((u.name || '?').trim().charAt(0))}</div><div class="ib"><div class="im"><b class="un">${esc(u.name)}</b>${u.email === me ? '<span class="pill y">أنت</span>' : ''}<span class="pill${u.role === 'admin' ? ' dp' : ''}">${RN[u.role]}</span><span class="pill${u.plan === 'plus' ? ' g' : ''}">${PN[u.plan] || u.plan}</span>${u.banned ? '<span class="pill dp">محظور</span>' : ''}</div>
+    <div class="ue" dir="ltr">${esc(u.email)}</div><div class="im" style="margin-top:6px"><small>أنهى ${(u.done || []).length}</small><small>محفوظ ${(u.bookmarks || []).length}</small><small>انضم ${date(u.created)}</small></div>
+    ${adm && u.email !== me ? `<div class="ia"><label class="usl">الدور<select data-e="${esc(u.email)}" data-f="role">${Object.entries(RN).map(([k, v]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${v}</option>`).join('')}</select></label><label class="usl">الخطة<select data-e="${esc(u.email)}" data-f="plan">${Object.entries(PN).map(([k, v]) => `<option value="${k}" ${k === u.plan ? 'selected' : ''}>${v}</option>`).join('')}</select></label><button class="btn sm ${u.banned ? 'blue' : 'danger'}" data-b="${esc(u.email)}">${u.banned ? 'رفع الحظر' : 'حظر'}</button></div>` : ''}</div></div>`).join('') || emptyBox('مفيش حسابات بالفلتر ده')}</div>`;
+    sfRender($('#sfh'), { id: 'users', state: f, items: l, ph: 'ابحث بالاسم أو البريد', onChange: draw,
+      groups: [{ key: 'role', label: 'الدور', get: u => u.role, opts: Object.entries(RN).map(([v, t]) => ({ v, t })) }, { key: 'plan', label: 'الخطة', get: u => u.plan, opts: Object.entries(PN).map(([v, t]) => ({ v, t })) }, { key: 'st', label: 'الحالة', get: stOf, opts: Object.entries(SN).map(([v, t]) => ({ v, t })) }],
+      sorts: [['new', 'الأحدث'], ['old', 'الأقدم'], ['act', 'الأكثر نشاطاً'], ['name', 'بالاسم']],
+      presets: [{ t: 'الفريق (أدمن ومحرر)', set: s => s.role = ['admin', 'editor'] }, { t: 'مشتركو بلس', set: s => s.plan = ['plus'] }, { t: 'المحظورون', set: s => s.st = ['ban'] }, { t: 'الأكثر نشاطاً', set: s => s.sort = 'act' }] });
+    el.querySelector('.ikp').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; f.role = []; f.plan = []; f.st = []; f.q = ''; f.sort = 'new'; const k = b.dataset.k; if (k === 'plus') f.plan = ['plus']; if (k === 'ban') f.st = ['ban']; if (k === 'new') f.sort = 'new'; draw(); };
+    el.querySelectorAll('select[data-f]').forEach(s => s.onchange = () => { const u = l.find(x => x.email === s.dataset.e); if (s.dataset.f === 'role' && s.value === 'admin' && !confirm('منح صلاحية أدمن كاملة لـ ' + u.name + '؟')) return draw(); set(u, { [s.dataset.f]: s.value }); });
+    el.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { const u = l.find(x => x.email === b.dataset.b); if (!u.banned && !confirm('حظر ' + u.name + '؟')) return; set(u, { banned: !u.banned }, u.banned ? 'اترفع الحظر' : 'تم الحظر'); });
+  };
+  draw();
 }
 async function aConnect(el) {
   const d = await api('/admin/integrations'); const adm = S.user.role === 'admin';
