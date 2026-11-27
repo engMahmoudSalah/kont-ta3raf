@@ -708,3 +708,14 @@ footer{position:static!important}
 .un{font-size:17px}.ue{color:#555;font-size:14px;margin-top:2px;overflow-wrap:anywhere;text-align:start}.usl{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px}.usl select{width:auto;min-height:40px;font-size:15px;border:1.5px solid var(--ink);border-radius:10px;padding:0 8px;background:#fff}
 .us .ia{align-items:center}
 .ue{text-align:right!important}
+/* v78 connect */
+.ptabs{display:flex;gap:8px;margin-bottom:14px;border-bottom:3px solid var(--ink);overflow-x:auto;scrollbar-width:none}.ptabs button{flex:1 1 0;white-space:nowrap;border:0;background:rgba(0,0,0,.05);font:inherit;font-weight:800;font-size:16px;padding:12px 14px;border-radius:12px 12px 0 0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}.ptabs button.on{background:var(--ink);color:#fff}
+.dot{width:10px;height:10px;border-radius:50%;background:#aaa;border:1.5px solid currentColor;display:inline-block}.dot.g{background:#4cc36a}
+.chd{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}.chd h3{margin:0 0 6px;font-size:22px}
+.cnn{background:rgba(0,0,0,.045);border-bottom:3px solid var(--ink);border-radius:12px 12px 0 0;padding:14px}.cnn p{margin:0 0 10px;font-weight:700}
+.cst{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:12px}.cst li{counter-increment:s;display:flex;flex-direction:column;gap:6px;padding-inline-start:40px;position:relative}.cst li::before{content:counter(s);position:absolute;inset-inline-start:0;top:0;width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900}.cst li.ok::before{content:"✓";background:#7bd08a}
+.cst code{user-select:all;word-break:break-all;background:#fff;border:1px solid rgba(0,0,0,.2);border-radius:8px;padding:6px 8px;font-size:13px;text-align:left}.cst span{color:#444;font-size:14px}.cst .btn{align-self:flex-start}
+.cdt{margin:12px 0;border-bottom:1px solid rgba(0,0,0,.15);padding-bottom:10px}.cdt summary{font-weight:800;font-size:17px;cursor:pointer;min-height:44px;display:flex;align-items:center}.cdt form input,.cdt form textarea,.cdt form select{font-size:16px}
+/* v78 item page lists: plain, no cards */
+article.post li{border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;padding:6px 0!important;margin:2px 0!important;align-items:flex-start;line-height:1.7}
+article.post li:before{flex:none;margin-top:1px}
