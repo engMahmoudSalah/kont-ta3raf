@@ -67,16 +67,14 @@ async function pItem(id) {
   let d; try { d = await api('/items/' + id); } catch { return shell(emptyBox('المحتوى غير موجود'), ''); }
   const i = d.item, c = catOf(i.cat), u = S.user;
   const saved = u && u.bookmarks.includes(i.id), done = u && u.done.includes(i.id);
-  const cm = list => list.length ? list.map(x => `<div class="cm"><b>${esc(x.by)}</b> <small>${date(x.t)}${x.status !== 'ok' ? ' · ' + (x.status === 'pending' ? 'بانتظار المراجعة' : 'مخفي') : ''}</small><div>${esc(x.text)}</div>${x.reply ? `<div class="rp"><b>${x.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(x.reply.text)}</div>` : ''}</div>`).join('') : emptyBox('كن أول من يعلّق');
   shell(`<div class="wrap"><article class="post"><a class="chip" href="#/explore/${i.cat}" style="background:${c.color}">${esc(c.name)}</a> <span class="chip">${TYPES[i.type]}</span>${i.ep ? ` <span class="chip" style="background:var(--yellow)">الحلقة ${i.ep}</span>` : ''}
-  <h1>${esc(i.title)}</h1><div class="meta"><span>${i.minutes} دقائق</span><span>${GI.eye} ${fmt(i.views)}</span><span id="lk">${GI.heart} ${i.likes}</span><span>${date(i.created)}</span></div>
+  <h1>${esc(i.title)}</h1><div class="meta"><span>${i.minutes} دقائق</span><span>${GI.eye} ${fmt(i.views)}</span><span id="lk">${GI.heart} ${i.likes}</span><span>${date(i.created)}</span></div><div id="rtx"></div>
   ${i.cover && !i.youtube ? `<div class="pcover"><img src="${esc(i.cover)}" alt="${esc(i.title)}"></div>` : ''}${i.youtube ? `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.youtube)}" allowfullscreen loading="lazy" title="${esc(i.title)}"></iframe></div>` : ''}
   <p style="font-weight:900;font-size:20px;margin-top:16px">${esc(i.summary)}</p>${md(i.body)}${i.short ? `<h2>النسخة القصيرة (Short)</h2><div class="vid" style="aspect-ratio:9/16;max-width:320px"><iframe src="https://www.youtube-nocookie.com/embed/${esc(i.short)}" allowfullscreen loading="lazy" title="Short"></iframe></div>` : ''}${i.credit ? `<p style="font-size:14px;color:var(--grey)">${esc(i.credit)}</p>` : ''}${(d.prev || d.next) ? `<div class="bar" style="justify-content:space-between">${d.next ? `<a class="btn sm w" href="#/item/${esc(d.next.id)}">الحلقة ${d.next.ep} ←</a>` : '<span></span>'}${d.prev ? `<a class="btn sm w" href="#/item/${esc(d.prev.id)}">→ الحلقة ${d.prev.ep}</a>` : ''}</div>` : ''}
   <div class="bar" style="margin-top:24px"><button class="btn red sm" id="b-like">${GI.heart} أعجبني</button><button class="btn sm" id="b-save">${saved ? '★ محفوظ' : '☆ احفظ'}</button><button class="btn blue sm" id="b-done">${done ? GI.check + ' تمت القراءة' : 'علّمه كمقروء'}</button>
   <button class="btn w sm" id="b-share">مشاركة</button></div>
   ${i.tiktok ? `<p><a class="chip" href="${esc(i.tiktok)}" target="_blank" rel="noopener">شاهده على تيك توك</a></p>` : ''}
-  <h2 style="margin-top:36px">التعليقات</h2><div id="cms">${cm(d.comments)}</div>
-  ${u ? `<label class="f">أضف تعليقاً</label><textarea id="ct" maxlength="600"></textarea><p style="margin-top:8px"><button class="btn sm" id="b-cm">أرسل</button></p><div class="err" id="ce"></div>` : '<p class="empty"><a class="btn sm" href="#/login">سجّل الدخول للتعليق</a></p>'}
+  <div id="cmx" style="margin-top:36px"></div>
   ${d.related.length ? `<h2 style="margin-top:36px">قد يعجبك</h2><div class="grid" style="grid-template-columns:1fr">${d.related.map(card).join('')}</div>` : ''}</article></div>`, '');
   addXp(10, 'v:' + i.id); document.title = i.title + ' | ' + S.home.settings.siteName;
   const need = () => { if (!S.user) { toast('سجّل الدخول أولاً'); location.hash = '#/login'; return true; } };
@@ -84,7 +82,7 @@ async function pItem(id) {
   $('#b-save').onclick = async () => { if (need()) return; const r = await api('/me/bookmark', 'POST', { id: i.id }); S.user.bookmarks = r.bookmarks; $('#b-save').textContent = r.bookmarks.includes(i.id) ? '★ محفوظ' : '☆ احفظ'; };
   $('#b-done').onclick = async () => { if (need()) return; const r = await api('/me/done', 'POST', { id: i.id }); S.user.done = r.done; $('#b-done').innerHTML = r.done.includes(i.id) ? GI.check + ' تمت القراءة' : 'علّمه كمقروء'; };
   $('#b-share').onclick = async () => { try { if (navigator.share) await navigator.share({ title: i.title, url: location.origin + '/e/' + i.id }); else { await navigator.clipboard.writeText(location.origin + '/e/' + i.id); toast('تم نسخ الرابط'); } } catch { } };
-  if ($('#b-cm')) $('#b-cm').onclick = async () => { try { await api(`/items/${i.id}/comments`, 'POST', { text: $('#ct').value }); pItem(i.id); } catch (e) { $('#ce').textContent = e.message; } };
+  rtMount(i); cmMount(i, d.comments);
 }
 function pAuth(mode) {
   const sign = mode === 'signup', setup = mode === 'setup';
@@ -238,4 +236,52 @@ function newsBand(items) {
   const f = FACTS[Math.floor(Date.now() / 864e5) % FACTS.length];
   const rows = [...L.map((i, n) => `<a class="hl h${n}" href="#/item/${i.id}"><i></i><b>${esc(i.title)}</b></a>`), `<a class="hl alt" href="#/play"><i></i><b>${esc(f[0])}</b><small>صح أم خرافة؟ تعال اكتشف ←</small></a>`];
   return `<section class="s"><div class="wrap"><div class="h2"><span class="live">عاجل من ماسكوت</span><small>آخر ما وصل إلى كنت تعرف</small></div><div class="hls">${rows.join('')}</div></div></section>`;
+}
+
+const SI = { star: gi('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'), flag: gi('<path d="M5 21V4m0 0h11l-2 4 2 4H5"/>'), reply: gi('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/>'), edit: gi('<path d="M4 20h4l10-10-4-4L4 16z"/>'), trash: gi('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>') };
+function stars(v, cls = '') { return [1, 2, 3, 4, 5].map(n => `<span class="stv ${cls}${v >= n - 0.25 ? ' f' : v >= n - 0.75 ? ' h' : ''}">${SI.star}</span>`).join(''); }
+function rtMount(i) {
+  const host = $('#rtx'); if (!host) return; let mine = i.mine || 0, avg = i.rAvg || 0, n = i.rN || 0;
+  const draw = () => {
+    host.innerHTML = `<div class="rtb"><div class="rts" aria-label="متوسط التقييم">${n ? `<b>${avg.toFixed(1)}</b><span class="stw">${stars(avg)}</span><small>${n} تقييم</small>` : '<small>لا تقييمات بعد. كن أول من يقيّم الحلقة</small>'}</div>
+    <div class="rtm" role="radiogroup" aria-label="قيّم الحلقة"><span class="rtl">${mine ? 'تقييمك' : 'قيّم الحلقة'}</span><span class="stw">${[1, 2, 3, 4, 5].map(k => `<button type="button" class="stb${mine >= k ? ' f' : ''}" data-s="${k}" role="radio" aria-checked="${mine === k}" aria-label="${k} من 5">${SI.star}</button>`).join('')}</span></div></div>`;
+    host.onclick = async e => { const b = e.target.closest('[data-s]'); if (!b) return; if (!S.user) { toast('سجّل الدخول للتقييم'); location.hash = '#/login'; return; } try { const r = await api(`/items/${i.id}/rate`, 'POST', { stars: +b.dataset.s }); mine = r.mine; avg = r.rAvg; n = r.rN; i.rAvg = avg; i.rN = n; toast('شكراً على تقييمك'); draw(); } catch (x) { toast(x.message); } };
+    const sb = host.querySelectorAll('.stb'); sb.forEach((b, k) => { b.onmouseenter = () => sb.forEach((x, j) => x.classList.toggle('h', j <= k)); b.onmouseleave = () => sb.forEach(x => x.classList.remove('h')); });
+  };
+  draw();
+}
+function cmMount(i, all) {
+  const host = $('#cmx'); if (!host) return; const u = S.user; const opened = Date.now(); let sort = 'new', shown = 8, open = '', editing = '';
+  const stl = { pending: 'بانتظار المراجعة', hidden: 'مخفي' };
+  const draw = () => {
+    const top = all.filter(c => !c.parent).sort((a, b) => sort === 'likes' ? (b.likes - a.likes) || (b.t - a.t) : b.t - a.t), kids = id => all.filter(c => c.parent === id).sort((a, b) => a.t - b.t);
+    const one = (c, sub) => `<div class="cmt${sub ? ' sub' : ''}" id="c-${c.id}"><div class="cmh"><b>${esc(c.by)}</b>${c.mine ? '<span class="pill">أنت</span>' : ''}<small>${date(c.t)}${c.edited ? ' · معدّل' : ''}</small>${c.status !== 'ok' ? `<span class="pill y">${stl[c.status] || c.status}</span>` : ''}</div>
+      ${editing === c.id ? `<textarea class="cmed" maxlength="600" data-ed="${c.id}">${esc(c.text)}</textarea><div class="cma"><button class="btn sm red" data-es="${c.id}">حفظ</button><button class="btn sm w" data-ec="1">إلغاء</button></div>` : `<p class="cmx">${esc(c.text)}</p>`}
+      ${c.reply ? `<div class="rp"><b>${c.reply.auto ? 'ردّ تلقائي' : 'فريق ' + esc(S.home.settings.siteName)}:</b> ${esc(c.reply.text)}</div>` : ''}
+      <div class="cma"><button class="cab${c.liked ? ' on' : ''}" data-l="${c.id}" aria-pressed="${c.liked}" aria-label="إعجاب">${GI.heart}<span>${c.likes || ''}</span></button>${!sub && c.status === 'ok' ? `<button class="cab" data-r="${c.id}">${SI.reply}<span>ردّ</span></button>` : ''}${c.mine ? `<button class="cab" data-e="${c.id}">${SI.edit}<span>تعديل</span></button><button class="cab" data-d="${c.id}">${SI.trash}<span>حذف</span></button>` : `<button class="cab${c.reported ? ' on' : ''}" data-rp="${c.id}" ${c.reported ? 'disabled' : ''}>${SI.flag}<span>${c.reported ? 'تم الإبلاغ' : 'إبلاغ'}</span></button>`}</div>
+      ${open === c.id ? `<div class="cmf"><textarea maxlength="600" data-rt="${c.id}" placeholder="اكتب ردّك..." aria-label="ردّ"></textarea><div class="cma"><button class="btn sm red" data-rs="${c.id}">أرسل</button><button class="btn sm w" data-rc="1">إلغاء</button></div></div>` : ''}
+      ${sub ? '' : kids(c.id).map(k => one(k, 1)).join('')}</div>`;
+    host.innerHTML = `<div class="cmhd"><h2 style="margin:0">التعليقات <span class="pill">${all.length}</span></h2>${top.length > 1 ? `<select id="cso" aria-label="ترتيب التعليقات"><option value="new" ${sort === 'new' ? 'selected' : ''}>الأحدث</option><option value="likes" ${sort === 'likes' ? 'selected' : ''}>الأكثر إعجاباً</option></select>` : ''}</div>
+    ${u ? `<div class="cmf main"><label class="f" for="ct">أضف تعليقاً</label><textarea id="ct" maxlength="600" placeholder="شاركنا رأيك أو سؤالك عن الحلقة"></textarea><input class="hp" id="hpw" tabindex="-1" autocomplete="off" aria-hidden="true"><div class="cma"><button class="btn sm red" id="b-cm">أرسل</button><small id="cc" dir="ltr">0 / 600</small><span class="err" id="ce"></span></div></div>` : '<p class="empty"><a class="btn sm" href="#/login">سجّل الدخول للتعليق</a></p>'}
+    <div class="cml">${top.slice(0, shown).map(c => one(c)).join('') || emptyBox('كن أول من يعلّق')}</div>${top.length > shown ? `<p><button class="btn sm w" id="cmore">عرض المزيد (${top.length - shown})</button></p>` : ''}`;
+    const ct = $('#ct'); if (ct) ct.oninput = () => { $('#cc').textContent = ct.value.length + ' / 600'; };
+    const so = $('#cso'); if (so) so.onchange = () => { sort = so.value; draw(); };
+    const mo = $('#cmore'); if (mo) mo.onclick = () => { shown += 8; draw(); };
+    const send = async (text, parent, errEl) => { try { const r = await api(`/items/${i.id}/comments`, 'POST', { text, parent, opened, website: ($('#hpw') || {}).value || '' }); all.push(r); toast(r.status === 'pending' ? 'وصل تعليقك، بانتظار المراجعة' : 'تم نشر التعليقك'.replace('التعليقك', 'تعليقك')); open = ''; draw(); } catch (e) { if (errEl) errEl.textContent = e.message; else toast(e.message); } };
+    const bc = $('#b-cm'); if (bc) bc.onclick = () => send($('#ct').value, '', $('#ce'));
+    host.onclick = async e => {
+      const b = e.target.closest('button'); if (!b) return; const D = b.dataset;
+      const act = async (id, a, extra) => { try { const r = await api(`/items/${i.id}/comments/${id}/${a}`, 'POST', extra || {}); const k = all.findIndex(x => x.id === id); if (r.comment) all[k] = r.comment; else all.splice(0, all.length, ...all.filter(x => x.id !== id && x.parent !== id)); editing = ''; draw(); return r; } catch (x) { toast(x.message); } };
+      if (D.l) { if (!u) { toast('سجّل الدخول أولاً'); return; } return act(D.l, 'like'); }
+      if (D.r) { open = open === D.r ? '' : D.r; return draw(); }
+      if (D.rc) { open = ''; return draw(); }
+      if (D.rs) { const t = host.querySelector(`[data-rt="${D.rs}"]`).value; return send(t, D.rs); }
+      if (D.rp) { if (!u) { toast('سجّل الدخول أولاً'); return; } if (confirm('الإبلاغ عن هذا التعليق؟')) { const r = await act(D.rp, 'report'); if (r) toast('وصل بلاغك، شكراً'); } return; }
+      if (D.e) { editing = D.e; return draw(); }
+      if (D.ec) { editing = ''; return draw(); }
+      if (D.es) return act(D.es, 'edit', { text: host.querySelector(`[data-ed="${D.es}"]`).value });
+      if (D.d) { if (confirm('حذف تعليقك؟')) return act(D.d, 'delete'); }
+    };
+  };
+  draw();
 }

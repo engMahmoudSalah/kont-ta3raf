@@ -29,7 +29,7 @@ const cicon = (id, sz = 28) => `<svg width="${sz}" height="${sz}" viewBox="0 0 2
 function card(i) {
   const c = catOf(i.cat);
   return `<a class="card" href="#/item/${esc(i.id)}">${i.cover ? `<div class="th cov"><em>${esc(c.name)}</em><img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy"></div>` : `<div class="th" style="background:${c.color}"><em>${esc(c.name)}</em>${mascot()}</div>`}
-  <div class="bd"><div class="meta">${i.ep ? `<span class="pill y">حلقة ${i.ep}</span>` : ''}${i.publishAt > Date.now() ? '<span class="pill r">مجدول</span>' : ''}<span>${TICON[i.type] || ''} ${TYPES[i.type] || ''}</span><span>${i.minutes} د</span><span>${GI.eye} ${fmt(i.views)}</span></div>
+  <div class="bd"><div class="meta">${i.ep ? `<span class="pill y">حلقة ${i.ep}</span>` : ''}${i.publishAt > Date.now() ? '<span class="pill r">مجدول</span>' : ''}<span>${TICON[i.type] || ''} ${TYPES[i.type] || ''}</span><span>${i.minutes} د</span><span>${GI.eye} ${fmt(i.views)}</span>${i.rN ? `<span class="rtc">${SI.star} ${i.rAvg.toFixed(1)} <small>(${i.rN})</small></span>` : ''}</div>
   <h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`;
 }
 function md(t) {

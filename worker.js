@@ -45,6 +45,7 @@ async function me(req, env) {
 const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done, persona: u.persona || '' });
 const isStaff = u => u && (u.role === 'admin' || u.role === 'editor');
 const live = (i, n = Date.now()) => i.status === 'published' && (!i.publishAt || i.publishAt <= n);
+const cview = (c, u) => { const st = isStaff(u); return { id: c.id, by: c.by, text: c.text, t: c.t, status: c.status, reply: c.reply, parent: c.parent || '', likes: (c.likes || []).length, liked: !!(u && (c.likes || []).includes(u.email)), mine: !!(u && c.email === u.email), edited: c.edited || 0, reports: st ? (c.reports || []).length : 0, reported: !!(u && (c.reports || []).includes(u.email)), ...(st ? { email: c.email } : {}) }; };
 const slim = i => { const { body, ...r } = i; return r; };
 
 async function rate(env, ip, name, max, ttl = 900) {
@@ -108,7 +109,8 @@ export default {
       if (live(it) && await rate(env, ip + mm[1], 'view', 1, 1800)) {
         it.views++; await put(env, 'items', items); hit(env, 'views'); hit(env, 'v:' + it.id);
       }
-      const comments = (await get(env, 'comments:' + it.id, [])).filter(c => c.status === 'ok' || isStaff(u));
+      const comments = (await get(env, 'comments:' + it.id, [])).filter(c => c.status === 'ok' || isStaff(u) || (u && c.email === u.email)).map(c => cview(c, u));
+      const rt = await get(env, 'ratings:' + it.id, {}); it.mine = u ? (rt[u.email] || 0) : 0;
       const related = items.filter(i => i.cat === it.cat && i.id !== it.id && live(i)).slice(0, 3).map(slim);
       const eps = items.filter(i => i.ep && live(i)).sort((a, b) => a.ep - b.ep); const k = eps.findIndex(i => i.id === it.id);
       return J({ item: it, comments, related, prev: k > 0 ? slim(eps[k - 1]) : null, next: k >= 0 && k < eps.length - 1 ? slim(eps[k + 1]) : null });
@@ -123,15 +125,55 @@ export default {
       const settings = await get(env, 'settings', {});
       if (!settings.commentsOpen) return err('التعليقات مغلقة حالياً', 403);
       if (!u) return err('سجّل الدخول للتعليق', 401);
+      if (body.website) return err('تعذّر الإرسال');
+      if (body.opened && Date.now() - Number(body.opened) < 2500) return err('انتظر لحظة قبل الإرسال');
       if (!await rate(env, u.email, 'cm', 8, 3600)) return err('محاولات كثيرة، حاول لاحقاً', 429);
-      const text = clip(body.text, 600).trim(); if (text.length < 2) return err('اكتب تعليقاً');
+      const text = clip(body.text, 600).replace(/\s+\n/g, '\n').trim(); if (text.length < 2) return err('اكتب تعليقاً');
+      if ((text.match(/https?:\/\//gi) || []).length > 1) return err('الروابط غير مسموحة في التعليقات');
+      if (/(.)\1{9,}/.test(text)) return err('النص يبدو مكرراً بلا معنى');
       const key = 'comments:' + mm[1]; const list = await get(env, key, []);
-      const c = { id: rid(6), by: u.name, email: u.email, text, t: Date.now(), status: settings.commentsModeration ? 'pending' : 'ok', reply: null };
-      const rules = await get(env, 'rules', []);
-      const r = rules.find(r => r.on && r.keywords.some(k => k && text.toLowerCase().includes(k.toLowerCase())));
-      if (r) { c.reply = { text: r.reply, auto: true, t: Date.now() }; r.hits = (r.hits || 0) + 1; await put(env, 'rules', rules); hit(env, 'autoreplies'); }
-      list.push(c); await put(env, key, list.slice(-200)); hit(env, 'comments');
-      return J(c);
+      if (list.some(x => x.email === u.email && x.text === text && Date.now() - x.t < 600000)) return err('أرسلت نفس التعليق للتو');
+      let parent = '';
+      if (body.parent) { const pc = list.find(x => x.id === body.parent && !x.parent && x.status === 'ok'); if (!pc) return err('التعليق الأصلي غير متاح'); parent = pc.id; }
+      const c = { id: rid(6), by: u.name, email: u.email, text, t: Date.now(), status: settings.commentsModeration ? 'pending' : 'ok', reply: null, parent, likes: [], reports: [] };
+      if (!parent) {
+        const rules = await get(env, 'rules', []);
+        const r = rules.find(r => r.on && r.keywords.some(k => k && text.toLowerCase().includes(k.toLowerCase())));
+        if (r) { c.reply = { text: r.reply, auto: true, t: Date.now() }; r.hits = (r.hits || 0) + 1; await put(env, 'rules', rules); hit(env, 'autoreplies'); }
+      }
+      list.push(c); await put(env, key, list.slice(-400)); hit(env, 'comments');
+      return J(cview(c, u));
+    }
+    if ((mm = p.match(/^\/api\/items\/([\w-]+)\/comments\/(\w+)\/(like|report|edit|delete)$/)) && m === 'POST') {
+      if (!u) return err('سجّل الدخول أولاً', 401);
+      const key = 'comments:' + mm[1]; let list = await get(env, key, []); const c = list.find(x => x.id === mm[2]);
+      if (!c || (c.status !== 'ok' && c.email !== u.email && !isStaff(u))) return err('not found', 404);
+      c.likes = c.likes || []; c.reports = c.reports || [];
+      if (mm[3] === 'like') { if (!await rate(env, u.email, 'clike', 60, 3600)) return err('محاولات كثيرة', 429); const k = c.likes.indexOf(u.email); if (k >= 0) c.likes.splice(k, 1); else c.likes.push(u.email); }
+      else if (mm[3] === 'report') {
+        if (c.email === u.email) return err('لا يمكنك الإبلاغ عن تعليقك');
+        if (!await rate(env, u.email, 'creport', 10, 3600)) return err('محاولات كثيرة', 429);
+        if (!c.reports.includes(u.email)) c.reports.push(u.email);
+        if (c.reports.length >= 3 && c.status === 'ok') { c.status = 'pending'; c.autoHeld = true; }
+      }
+      else if (mm[3] === 'edit') {
+        if (c.email !== u.email) return err('forbidden', 403);
+        if (Date.now() - c.t > 86400000) return err('انتهت مهلة التعديل (24 ساعة)');
+        const text = clip(body.text, 600).trim(); if (text.length < 2) return err('اكتب تعليقاً');
+        if ((text.match(/https?:\/\//gi) || []).length > 1) return err('الروابط غير مسموحة في التعليقات');
+        c.text = text; c.edited = Date.now(); if ((await get(env, 'settings', {})).commentsModeration) c.status = 'pending';
+      }
+      else if (mm[3] === 'delete') { if (c.email !== u.email && !isStaff(u)) return err('forbidden', 403); list = list.filter(x => x.id !== c.id && x.parent !== c.id); }
+      await put(env, key, list); return J({ ok: true, comment: list.includes(c) ? cview(c, u) : null });
+    }
+    if ((mm = p.match(/^\/api\/items\/([\w-]+)\/rate$/)) && m === 'POST') {
+      if (!u) return err('سجّل الدخول للتقييم', 401);
+      const stars = Math.round(Number(body.stars)); if (!(stars >= 1 && stars <= 5)) return err('التقييم من 1 إلى 5');
+      if (!await rate(env, u.email, 'rate', 40, 3600)) return err('محاولات كثيرة', 429);
+      const items = await get(env, 'items', []); const it = items.find(i => i.id === mm[1]); if (!it || !live(it)) return err('not found', 404);
+      const rt = await get(env, 'ratings:' + it.id, {}); rt[u.email] = stars; await put(env, 'ratings:' + it.id, rt);
+      const v = Object.values(rt); it.rN = v.length; it.rAvg = Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10; await put(env, 'items', items);
+      hit(env, 'ratings'); return J({ rAvg: it.rAvg, rN: it.rN, mine: stars });
     }
     if (p === '/api/kids/facts' && m === 'GET') {
       const sp = url.searchParams, lv = Number(sp.get('level')) || 0, tp = sp.get('topic') || '', n = Math.min(24, Math.max(1, Number(sp.get('n')) || 6));
@@ -292,7 +334,7 @@ export default {
     }
     if (p === '/api/admin/comments' && m === 'GET') {
       const items = await get(env, 'items', []); const out = [];
-      for (const i of items) for (const c of await get(env, 'comments:' + i.id, [])) out.push({ ...c, item: i.id, itemTitle: i.title });
+      for (const i of items) for (const c of await get(env, 'comments:' + i.id, [])) out.push({ ...c, likes: (c.likes || []).length, reports: (c.reports || []).length, item: i.id, itemTitle: i.title });
       return J(out.sort((a, b) => b.t - a.t).slice(0, 200));
     }
     if (p === '/api/admin/comments' && m === 'POST') {
@@ -300,9 +342,15 @@ export default {
       const c = list.find(x => x.id === body.id); if (!c) return err('not found', 404);
       if (body.action === 'approve') c.status = 'ok';
       else if (body.action === 'hide') c.status = 'hidden';
-      else if (body.action === 'delete') list = list.filter(x => x.id !== body.id);
+      else if (body.action === 'delete') list = list.filter(x => x.id !== body.id && x.parent !== body.id);
+      else if (body.action === 'dismiss') { c.reports = []; c.autoHeld = false; if (c.status === 'pending') c.status = 'ok'; }
       else if (body.action === 'reply') c.reply = { text: clip(body.text, 600), auto: false, t: Date.now() };
       await put(env, key, list); await log(env, u.email, 'تعليق: ' + body.action); return J({ ok: true });
+    }
+    if (p === '/api/admin/ratings' && m === 'GET') {
+      const items = await get(env, 'items', []); const out = [];
+      for (const i of items) { const rt = await get(env, 'ratings:' + i.id, {}); const v = Object.values(rt); const dist = [1, 2, 3, 4, 5].map(n => v.filter(x => x === n).length); out.push({ id: i.id, title: i.title, ep: i.ep || 0, n: v.length, avg: v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0, dist }); }
+      return J(out);
     }
     if (p === '/api/admin/rules' && m === 'GET') return J(await get(env, 'rules', []));
     if (p === '/api/admin/rules' && m === 'POST') {
