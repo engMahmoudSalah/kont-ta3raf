@@ -103,7 +103,8 @@ async function pAccount() {
   if (!S.user) return (location.hash = '#/login');
   const u = S.user, items = S.home.items, saved = items.filter(i => u.bookmarks.includes(i.id)), done = items.filter(i => u.done.includes(i.id));
   const pct = items.length ? Math.round(done.length / items.length * 100) : 0;
-  shell(`<div class="wrap"><section class="s"><div class="h2">أهلاً ${esc(u.name)}<small>${esc(u.email)} · خطة ${u.plan === 'plus' ? 'بلس' : 'مجانية'}</small></div>
+  const dlb = u.delAt ? `<div class="box dlb" role="alert"><b>حسابك مجدول للحذف النهائي يوم ${new Date(u.delAt).toLocaleDateString('ar-EG', { dateStyle: 'full' })}</b><p>كل بياناتك (المفضلة والتقدّم والتعليقات والتقييمات) هتتمسح وقتها ومفيش رجوع بعدها. تقدر تسترجع حسابك في أي وقت قبل كده.</p><p><button class="btn red" id="rs">استرجاع حسابي</button></p></div>` : '';
+  shell(`<div class="wrap">${dlb}<section class="s"><div class="h2">أهلاً ${esc(u.name)}<small>${esc(u.email)} · خطة ${u.plan === 'plus' ? 'بلس' : 'مجانية'}</small></div>
   <div class="kp" style="margin:20px 0"><div><b>${saved.length}</b><span>محفوظ</span></div><div><b>${done.length}</b><span>مقروء</span></div><div><b>${pct}%</b><span>تقدّمك</span></div></div>
   <div class="acx"><div class="box">${meter()}<p style="margin-top:8px"><small>سلسلة أيام اللعب: <b>${(JSON.parse(localStorage.kt_play || '{}').streak) || 0}</b></small></p></div>
   <div class="box"><b>شخصيتك</b><p style="margin:8px 0">${persona() && PERSONAS[persona()] ? `<span class="chip" style="background:${PERSONAS[persona()].color};color:#fff">${esc(PERSONAS[persona()].name)}</span> ${esc(PERSONAS[persona()].line)}` : 'لم تحدد شخصيتك بعد. اعرف نوع فضولك ونرتّب لك الموقع.'}</p><a class="btn sm" href="#/quiz">${persona() ? 'أعد الاختبار' : 'ابدأ الاختبار'}</a></div>
@@ -116,7 +117,8 @@ async function pAccount() {
   <div class="pwm" id="pm" hidden><i><u id="pmu"></u></i><small id="pmt"></small></div>
   <label class="f" for="pc" id="pcl" hidden>أعد كتابة كلمة المرور</label><input id="pc" type="password" autocomplete="new-password" hidden>
   <div class="err" id="pe" role="alert" aria-live="polite"></div>
-  <div class="pfb"><button class="btn red" id="ps" disabled>حفظ التغييرات</button><button type="button" class="btn w" id="lo">خروج</button></div></form></div></section></div>`, '/account');
+  <div class="pfb"><button class="btn red" id="ps" disabled>حفظ التغييرات</button><button type="button" class="btn w" id="lo">خروج</button></div></form>
+  ${u.role === 'admin' ? '' : u.delAt ? '' : `<details class="dgr"><summary>حذف الحساب</summary><p>هنمسح حسابك بعد <b>7 أيام</b>. خلال المهلة تقدر تدخل وتسترجعه بضغطة. بعد 7 أيام بيتمسح نهائياً: المفضلة والتقدّم والتعليقات والتقييمات.</p><label class="f" for="dpw">اكتب كلمة المرور للتأكيد</label><input id="dpw" type="password" autocomplete="current-password"><div class="err" id="de" role="alert"></div><p><button type="button" class="btn w" id="db">جدولة حذف حسابي</button></p></details>`}</div></section></div>`, '/account');
   const nm0 = u.name, pn = $('#pn'), pp = $('#pp'), pc = $('#pc'), ps = $('#ps'), pe = $('#pe');
   const strength = v => { let s = Math.min(v.length / 10, 1) * 50; if (/[A-Za-z]/.test(v) && /\d/.test(v)) s += 25; if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s += 25; return Math.round(s); };
   const upd = () => {
@@ -135,6 +137,8 @@ async function pAccount() {
     try { S.user = { ...S.user, ...await api('/me/profile', 'POST', { name: pn.value.trim(), password: pp.value }) }; toast(pp.value ? 'تم حفظ الاسم وكلمة المرور' : 'تم الحفظ'); pAccount(); }
     catch (er) { pe.textContent = er.message; ps.textContent = 'حفظ التغييرات'; ps.disabled = false; }
   };
+  if ($('#rs')) $('#rs').onclick = async () => { try { S.user = { ...S.user, ...await api('/me/restore', 'POST') }; delete S.user.delAt; toast('تم استرجاع حسابك'); pAccount(); } catch (er) { toast(er.message); } };
+  if ($('#db')) $('#db').onclick = async () => { const pw = $('#dpw').value; if (!pw) { $('#de').textContent = 'اكتب كلمة المرور'; return $('#dpw').focus(); } if (!confirm('هنحذف حسابك بعد 7 أيام، وتقدر تسترجعه قبلها. متأكد؟')) return; try { S.user = { ...S.user, ...await api('/me/delete', 'POST', { password: pw }) }; toast('تمت جدولة الحذف'); pAccount(); } catch (er) { $('#de').textContent = er.message; } };
   let lt; $('#lo').onclick = async e => {
     const b = e.target; if (!b.dataset.s) { b.dataset.s = 1; b.textContent = 'متأكد؟ اضغط تاني للخروج'; clearTimeout(lt); lt = setTimeout(() => { delete b.dataset.s; b.textContent = 'خروج'; }, 3500); return; }
     await api('/me/logout', 'POST').catch(() => { }); S.token = ''; S.user = null; localStorage.removeItem('kt_token'); location.hash = '#/';

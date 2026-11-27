@@ -39,10 +39,26 @@ async function me(req, env) {
   const t = (req.headers.get('authorization') || '').replace('Bearer ', '');
   if (!t) return null;
   const s = await get(env, 'sess:' + t, null); if (!s) return null;
-  const u = await get(env, 'user:' + s.email, null); if (!u || u.banned) return null;
+  const u = await get(env, 'user:' + s.email, null); if (!u || u.banned || (u.delAt && u.delAt <= Date.now())) return null;
   return u;
 }
-const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done, persona: u.persona || '' });
+const pub = u => u && ({ email: u.email, name: u.name, role: u.role, plan: u.plan, created: u.created, bookmarks: u.bookmarks, done: u.done, persona: u.persona || '', delAt: u.delAt || 0 });
+const GRACE = 7 * 86400000;
+async function purgeUser(env, email) {
+  const items = await get(env, 'items', []); let ch = false;
+  for (const it of items) {
+    const cl = await get(env, 'comments:' + it.id, []); const nl = cl.filter(c => c.email !== email && !cl.some(p => p.id === c.parent && p.email === email));
+    if (nl.length !== cl.length) await put(env, 'comments:' + it.id, nl);
+    const rt = await get(env, 'ratings:' + it.id, {}); if (email in rt) { delete rt[email]; await put(env, 'ratings:' + it.id, rt); const v = Object.values(rt); it.rN = v.length; it.rAvg = v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; ch = true; }
+  }
+  if (ch) await put(env, 'items', items);
+  await env.KV.delete('user:' + email);
+  const ul = await get(env, 'users', []); await put(env, 'users', ul.filter(e => e !== email));
+  await log(env, 'system', 'حذف نهائي لحساب بعد مهلة 7 أيام: ' + email);
+}
+async function purgeDue(env) {
+  for (const e of await get(env, 'users', [])) { const x = await get(env, 'user:' + e, null); if (x && x.delAt && x.delAt <= Date.now() && x.role !== 'admin') await purgeUser(env, e); }
+}
 const isStaff = u => u && (u.role === 'admin' || u.role === 'editor');
 const live = (i, n = Date.now()) => i.status === 'published' && (!i.publishAt || i.publishAt <= n);
 const cview = (c, u) => { const st = isStaff(u); return { id: c.id, by: c.by, text: c.text, t: c.t, status: c.status, reply: c.reply, parent: c.parent || '', likes: (c.likes || []).length, liked: !!(u && (c.likes || []).includes(u.email)), mine: !!(u && c.email === u.email), edited: c.edited || 0, reports: st ? (c.reports || []).length : 0, reported: !!(u && (c.reports || []).includes(u.email)), ...(st ? { email: c.email } : {}) }; };
@@ -221,7 +237,7 @@ export default {
       if (!await rate(env, ip, 'login', 10)) return err('محاولات كثيرة، حاول بعد 15 دقيقة', 429);
       const email = clip(body.email, 120).toLowerCase().trim();
       const user = await get(env, 'user:' + email, null);
-      if (!user || user.banned || user.hash !== await hash(String(body.password || ''), user.salt)) return err('بيانات غير صحيحة', 401);
+      if (!user || user.banned || (user.delAt && user.delAt <= Date.now()) || user.hash !== await hash(String(body.password || ''), user.salt)) return err('بيانات غير صحيحة', 401);
       const t = rid(24); await put(env, 'sess:' + t, { email }, { expirationTtl: 86400 * 30 });
       return J({ token: t, user: pub(user) });
     }
@@ -263,6 +279,19 @@ export default {
       if (!u) return err('unauth', 401);
       if (!['explorer', 'analyst', 'storyteller', 'dreamer'].includes(body.type)) return err('نوع غير صالح');
       u.persona = body.type; await put(env, 'user:' + u.email, u); return J(pub(u));
+    }
+    if (p === '/api/me/delete' && m === 'POST') {
+      if (!u) return err('unauth', 401);
+      if (u.role === 'admin') return err('حساب الأدمن لا يُحذف من هنا', 403);
+      if (!await rate(env, u.email, 'delacc', 5, 3600)) return err('محاولات كثيرة', 429);
+      if (u.hash !== await hash(String(body.password || ''), u.salt)) return err('كلمة المرور غير صحيحة', 401);
+      if (!u.delAt) { u.delAt = Date.now() + GRACE; await put(env, 'user:' + u.email, u); await log(env, u.email, 'طلب حذف الحساب (مهلة 7 أيام)'); }
+      return J(pub(u));
+    }
+    if (p === '/api/me/restore' && m === 'POST') {
+      if (!u) return err('unauth', 401);
+      if (u.delAt) { delete u.delAt; await put(env, 'user:' + u.email, u); await log(env, u.email, 'استرجاع الحساب قبل الحذف'); }
+      return J(pub(u));
     }
     if (p === '/api/me/profile' && m === 'POST') {
       if (!u) return err('unauth', 401);
@@ -437,6 +466,7 @@ export default {
     const mn = Math.floor(Date.now() / 60000);
     try { await IG.qRunDue(env); } catch (e) { }
     try { await IG.ytAiAuto(env); } catch (e) { }
+    if (mn % 60 === 7) { try { await purgeDue(env); } catch (e) { } }
     if (mn % 15 !== 0) return;
     const cfg = await get(env, 'intcfg', { ytAuto: false }); if (!cfg.ytAuto) return;
     try { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules); if (r.replied) await put(env, 'rules', rules); } catch (e) { const t = await get(env, 'oauth', {}); if (t.youtube) { t.youtube.err = e.message; await put(env, 'oauth', t); } }

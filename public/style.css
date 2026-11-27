@@ -793,3 +793,5 @@ article.post>.chip{margin-inline-end:6px;margin-bottom:6px}
 .seg{display:flex;gap:6px;margin:0 0 12px}.seg button{flex:0 0 auto;border:0;background:rgba(0,0,0,.07);color:var(--ink);font:inherit;font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;min-height:32px}.seg button.on{background:var(--ink);color:#fff}
 .ptabs.sub.s2{border-bottom:1px solid rgba(0,0,0,.2);margin:10px 0 12px}.ptabs.sub.s2 button{font-size:13px}
 @media(max-width:520px){.ptabs.sub:not(.s2){gap:3px}.ptabs.sub:not(.s2) button{font-size:12.5px;padding:8px 7px;flex:1 1 auto}}
+.dlb{background:#fbe9b7;border:2px solid var(--ink);margin:0 0 16px;padding:14px}.dlb p{margin:8px 0}
+.dgr{margin-top:22px;border-top:1px dashed rgba(0,0,0,.3);padding-top:12px}.dgr summary{cursor:pointer;color:#a8320f;font-weight:700}.dgr p{margin:8px 0;color:#444}.dgr input{width:100%}
