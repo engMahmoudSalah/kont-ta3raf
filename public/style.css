@@ -726,3 +726,14 @@ article.post li:before{flex:none;margin-top:1px}
 .anp{margin-top:6px}.anp small{color:#555;font-weight:700}.anb{margin-top:6px;background:#181818;color:#ffd23f;text-align:center;font-weight:800;padding:8px 12px;border-radius:10px;font-size:14px}
 .stg{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px dashed rgba(0,0,0,.15)}.stg span{display:flex;flex-direction:column}.stg small{font-weight:600;color:#555;font-size:13px}.stg i{flex:none}
 .cts{display:flex;flex-direction:column;gap:8px}.ctr{display:flex;gap:8px;align-items:center}.sw2{width:10px;align-self:stretch;border-radius:6px;border:1.5px solid var(--ink);flex:none}.ctr input{min-width:0;font-size:16px}.ctr input[data-f=name]{flex:1}.ci{width:60px;text-align:center}.cc2{width:52px;height:44px;padding:2px;flex:none}.mv{display:flex;gap:4px}.mv button{width:34px;height:40px;border:0;background:rgba(0,0,0,.07);border-radius:8px;cursor:pointer}.mv button[disabled]{opacity:.3}
+/* v81 annotations: bigger, framed labels everywhere */
+.pill,.chip:not([role=button]){display:inline-flex;align-items:center;min-height:30px;padding:0 13px;border:1.5px solid var(--ink);border-radius:20px;font-weight:900;line-height:1;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
+.pill{font-size:14px}.chip:not([role=button]){font-size:15px}
+.chip.on:not([role=button]){background:var(--ink);color:#fff}
+.sft .chip{box-shadow:none}
+.meta{font-size:15px;gap:10px;flex-wrap:wrap;align-items:center}
+.meta>span{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 12px;border:1.5px solid var(--ink);border-radius:20px;background:#fff;color:var(--ink);font-weight:800}
+.meta .pill{box-shadow:none}
+.meta>span .pill{border:0;padding:0;box-shadow:none;min-height:0}
+article.post>.chip{margin-inline-end:6px;margin-bottom:6px}
+.ig .im .pill{box-shadow:1.5px 1.5px 0 var(--ink)}
