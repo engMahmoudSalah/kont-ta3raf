@@ -759,3 +759,6 @@ article.post>.chip{margin-inline-end:6px;margin-bottom:6px}
 .cab{display:inline-flex;align-items:center;gap:6px;border:0;background:none;font:inherit;font-weight:800;font-size:14px;color:#333;cursor:pointer;min-height:40px;padding:0 10px;border-radius:20px}.cab:hover{background:rgba(0,0,0,.06)}.cab svg{width:18px;height:18px}.cab.on{color:#d3362b}.cab.on svg{fill:currentColor}.cab[disabled]{opacity:.55;cursor:default}
 .dst{margin-top:8px;display:flex;flex-direction:column;gap:3px;max-width:320px}.dst div{display:flex;align-items:center;gap:8px;font-size:13px}.dst span{width:12px}.dst i{display:block;height:10px;background:#ffc928;border:1.5px solid var(--ink);border-radius:6px;min-width:2px}.dst em{font-style:normal;color:#555}
 @media(min-width:701px){.ikp{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}}
+
+.aik .row{margin-top:6px}.kuse{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:13px;color:#4a4339}.kuse a{font-weight:800}.kout{margin-top:6px;font-size:14px}.okm{color:#1f6b2a;font-weight:800}.sech{margin:18px 0 6px}
+.kuse .err,.kout .err{color:#a8320f}
