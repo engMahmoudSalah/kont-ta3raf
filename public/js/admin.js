@@ -254,16 +254,35 @@ async function aConnect(el) {
   if ($('#tuf')) $('#tuf').onsubmit = e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); busy('#tuo', async () => { const rr = await api('/admin/tt/upload', 'POST', f); out('#tuo', `<p>تم الإرسال (${rr.mode}) رقم ${esc(rr.publishId)}</p>`); }); };
 }
 async function aSettings(el) {
-  const { settings: s, cats } = await api('/admin/settings'); const adm = S.user.role === 'admin';
-  const T = (k, l) => `<label class="f">${l}</label><input data-s="${k}" value="${esc(s[k])}" ${adm ? '' : 'disabled'}>`;
-  const C = (k, l) => `<label class="sw"><input type="checkbox" data-s="${k}" ${s[k] ? 'checked' : ''} ${adm ? '' : 'disabled'}> ${l}</label>`;
-  el.innerHTML = `<div class="box"><div class="row"><div>${T('siteName', 'اسم الموقع')}${T('announcement', 'شريط الإعلان (فارغ = مخفي)')}${T('heroTitle', 'عنوان الصفحة الرئيسية')}${T('heroSub', 'وصف الصفحة الرئيسية')}</div><div>${T('youtube', 'رابط قناة يوتيوب')}${T('tiktok', 'رابط حساب تيك توك')}<div style="margin-top:14px">${C('allowSignup', 'السماح بالتسجيل')}${C('commentsOpen', 'فتح التعليقات')}${C('commentsModeration', 'مراجعة التعليقات قبل الظهور')}${C('showPlans', 'إظهار صفحة الخطط')}</div></div></div>
-  <h3 style="margin-top:14px">التصنيفات</h3>${cats.map((c, k) => `<div class="bar" style="margin:6px 0"><input data-c="${k}" data-f="icon" value="${esc(c.icon)}" style="max-width:70px"><input data-c="${k}" data-f="name" value="${esc(c.name)}" style="max-width:200px"><input data-c="${k}" data-f="color" type="color" value="${esc(c.color)}" style="max-width:70px;padding:2px"></div>`).join('')}
-  ${adm ? '<p style="margin-top:14px"><button class="btn red sm" id="ss">حفظ الإعدادات</button></p>' : '<p class="empty">الإعدادات للأدمن فقط</p>'}</div>`;
-  el.oninput = e => { const d = e.target.dataset; if (d.s) s[d.s] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; };
-  el.onchange = e => { const d = e.target.dataset; if (d.s && e.target.type === 'checkbox') s[d.s] = e.target.checked; };
-  el.addEventListener('input', e => { const d = e.target.dataset; if (d.c !== undefined) cats[d.c][d.f] = e.target.value; });
-  if (adm) $('#ss').onclick = async () => { try { await api('/admin/settings', 'POST', { settings: s, cats }); S.home = await api('/home'); toast('تم الحفظ'); } catch (e) { toast(e.message); } };
+  const { settings: s, cats } = await api('/admin/settings'); const adm = S.user.role === 'admin', dis = adm ? '' : 'disabled';
+  const snap = () => JSON.stringify([s, cats]); let saved = snap();
+  const T = (k, l, o = {}) => `<div class="stf"><label class="f" for="s-${k}">${l}</label><input id="s-${k}" data-s="${k}" maxlength="${o.max || 300}" value="${esc(s[k])}" ${o.dir ? 'dir="ltr"' : ''} ${o.ph ? `placeholder="${o.ph}"` : ''} ${dis}><small class="sfc" dir="ltr" data-n="${k}"></small></div>`;
+  const C = (k, l, h) => `<label class="tg stg"><input type="checkbox" data-s="${k}" ${s[k] ? 'checked' : ''} ${dis}><i></i><span><b>${l}</b><small>${h}</small></span></label>`;
+  const bad = k => s[k] && !/^https:\/\/\S+$/.test(s[k]);
+  const draw = () => { el.innerHTML = `<nav class="sfn" aria-label="أقسام الإعدادات"><a href="#set-g">عام</a><a href="#set-l">الروابط</a><a href="#set-f">التحكم</a><a href="#set-c">التصنيفات</a></nav>
+  <section class="sfs2" id="set-g"><h3>عام</h3>${T('siteName', 'اسم الموقع', { max: 40 })}${T('heroTitle', 'عنوان الصفحة الرئيسية', { max: 120 })}${T('heroSub', 'وصف الصفحة الرئيسية', { max: 240 })}${T('announcement', 'شريط الإعلان (فارغ = مخفي)', { max: 160 })}<div class="anp" id="anp"></div></section>
+  <section class="sfs2" id="set-l"><h3>الروابط</h3>${T('youtube', 'رابط قناة يوتيوب', { dir: 1, ph: 'https://youtube.com/@...' })}${T('tiktok', 'رابط حساب تيك توك', { dir: 1, ph: 'https://tiktok.com/@...' })}<p class="err" id="ule" hidden>الروابط لازم تبدأ بـ https://</p></section>
+  <section class="sfs2" id="set-f"><h3>التحكم في الموقع</h3>${C('allowSignup', 'السماح بالتسجيل', 'لو أُغلق، لا يستطيع أحد إنشاء حساب جديد')}${C('commentsOpen', 'فتح التعليقات', 'لو أُغلق، تختفي خانة التعليق من الحلقات')}${C('commentsModeration', 'مراجعة التعليقات قبل الظهور', 'التعليق يظهر فقط بعد موافقتك من صفحة التعليقات')}${C('showPlans', 'إظهار صفحة الخطط', 'يتحكم في ظهور رابط الخطط للزوار')}</section>
+  <section class="sfs2" id="set-c"><h3>التصنيفات <small>الترتيب هنا هو ترتيبها في الموقع. لا حذف لأن الحلقات مرتبطة بها.</small></h3><div class="cts">${cats.map((c, k) => `<div class="ctr"><span class="sw2" style="background:${esc(c.color)}"></span><input data-c="${k}" data-f="icon" value="${esc(c.icon)}" maxlength="4" aria-label="رمز" class="ci" ${dis}><input data-c="${k}" data-f="name" value="${esc(c.name)}" maxlength="30" aria-label="الاسم" ${dis}><input data-c="${k}" data-f="color" type="color" value="${esc(c.color)}" aria-label="اللون" class="cc2" ${dis}>${adm ? `<span class="mv"><button type="button" data-mv="-1" data-k="${k}" aria-label="لأعلى" ${k === 0 ? 'disabled' : ''}>▲</button><button type="button" data-mv="1" data-k="${k}" aria-label="لأسفل" ${k === cats.length - 1 ? 'disabled' : ''}>▼</button></span>` : ''}</div>`).join('')}</div></section>
+  ${adm ? '<div class="ibk" id="ssb" hidden><b>فيه تغييرات لسه ماتحفظتش</b><button class="btn sm red" id="ss">حفظ الإعدادات</button><button class="lk" id="sv">تراجع</button></div>' : '<p class="empty">الإعدادات للأدمن فقط</p>'}`; bind(); };
+  const upd = () => {
+    el.querySelectorAll('[data-n]').forEach(n => { const k = n.dataset.n; n.textContent = (s[k] || '').length + ' / ' + $('#s-' + k).maxLength; });
+    const an = $('#anp'); an.innerHTML = s.announcement ? `<small>معاينة الشريط</small><div class="anb">${esc(s.announcement)}</div>` : '<small>الشريط مخفي حالياً</small>';
+    $('#ule').hidden = !(bad('youtube') || bad('tiktok'));
+    ['youtube', 'tiktok'].forEach(k => $('#s-' + k).classList.toggle('bd', !!bad(k)));
+    const b = $('#ssb'); if (b) b.hidden = snap() === saved;
+  };
+  const bind = () => {
+    upd();
+    el.oninput = e => { const d = e.target.dataset; if (d.s && e.target.type !== 'checkbox') s[d.s] = e.target.value; if (d.c !== undefined) { cats[d.c][d.f] = e.target.value; if (d.f === 'color') e.target.parentNode.querySelector('.sw2').style.background = e.target.value; } upd(); };
+    el.onchange = e => { const d = e.target.dataset; if (d.s && e.target.type === 'checkbox') { s[d.s] = e.target.checked; upd(); } };
+    el.onclick = e => { const t = e.target.closest('[data-mv]'); if (t) { const k = +t.dataset.k, m = +t.dataset.mv; [cats[k], cats[k + m]] = [cats[k + m], cats[k]]; draw(); } };
+    if (adm) {
+      $('#ss').onclick = async () => { if (bad('youtube') || bad('tiktok')) return toast('الروابط لازم https'); try { await api('/admin/settings', 'POST', { settings: s, cats }); S.home = await api('/home'); saved = snap(); upd(); toast('تم الحفظ'); } catch (e) { toast(e.message); } };
+      $('#sv').onclick = () => aSettings(el);
+    }
+  };
+  draw();
 }
 async function aIdeas(el) {
   let l = await api('/admin/suggestions'); const cats = (S.home && S.home.cats) || [];
