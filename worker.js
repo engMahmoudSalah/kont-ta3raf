@@ -1,6 +1,7 @@
 import * as IG from './integrations.js';
 import { CATS, ITEMS, RULES, SETTINGS } from './seed.js';
 import { KIDS } from './kidsdata.js';
+import { STATIC_ITEMS } from './statics.js';
 const KROW = (r, i) => ({ id: i + 1, topic: r[0], level: r[1], n: r[2], t: r[3], c: r[4], q: r[5], a: r[6], w: [r[7], r[8]] });
 
 const J = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -15,7 +16,7 @@ async function hash(pw, salt) {
 }
 const clip = (s, n) => String(s ?? '').slice(0, n);
 
-async function get(env, k, d) { const v = await env.KV.get(k, 'json'); return v ?? d; }
+async function get(env, k, d) { const v = await env.KV.get(k, 'json'); if (k === 'items' && Array.isArray(v)) { const ids = new Set(v.map(x => x.id)); const add = STATIC_ITEMS.filter(x => !ids.has(x.id)); return add.length ? [...add, ...v] : v; } return v ?? d; }
 const put = (env, k, v, o) => env.KV.put(k, JSON.stringify(v), o);
 
 async function init(env) {
@@ -29,7 +30,7 @@ async function init(env) {
 }
 async function hit(env, key, n = 1) {
   const k = 'stat:' + day(); const s = await get(env, k, {});
-  s[key] = (s[key] || 0) + n; await put(env, k, s, { expirationTtl: 86400 * 120 });
+  s[key] = (s[key] || 0) + n; try { await put(env, k, s, { expirationTtl: 86400 * 120 }); } catch (e) { }
 }
 async function log(env, who, what) {
   const l = await get(env, 'log', []); l.unshift({ t: Date.now(), who, what: clip(what, 200) });
@@ -66,7 +67,7 @@ const slim = i => { const { body, ...r } = i; return r; };
 
 async function rate(env, ip, name, max, ttl = 900) {
   const k = `rl:${name}:${ip}`; const n = Number(await env.KV.get(k) || 0);
-  if (n >= max) return false; await env.KV.put(k, String(n + 1), { expirationTtl: ttl }); return true;
+  if (n >= max) return false; try { await env.KV.put(k, String(n + 1), { expirationTtl: ttl }); } catch (e) { } return true;
 }
 
 
@@ -123,7 +124,7 @@ export default {
       const items = await get(env, 'items', []); const it = items.find(i => i.id === mm[1]);
       if (!it || (!live(it) && !isStaff(u))) return err('not found', 404);
       if (live(it) && await rate(env, ip + mm[1], 'view', 1, 1800)) {
-        it.views++; await put(env, 'items', items); hit(env, 'views'); hit(env, 'v:' + it.id);
+        it.views++; try { await put(env, 'items', items); } catch (e) { } hit(env, 'views'); hit(env, 'v:' + it.id);
       }
       const comments = (await get(env, 'comments:' + it.id, [])).filter(c => c.status === 'ok' || isStaff(u) || (u && c.email === u.email)).map(c => cview(c, u));
       const rt = await get(env, 'ratings:' + it.id, {}); it.mine = u ? (rt[u.email] || 0) : 0;
