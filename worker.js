@@ -346,12 +346,14 @@ export default {
     if (p === '/api/admin/integrations' && m === 'GET') {
       return J({ ...(await IG.status(env, url.origin)), queue: await get(env, 'queue', []) });
     }
-    if (p.startsWith('/api/admin/oauth/') || p.startsWith('/api/admin/yt/') || p.startsWith('/api/admin/tt/') || p === '/api/admin/intcfg') {
+    if (p.startsWith('/api/admin/oauth/') || p.startsWith('/api/admin/yt/') || p.startsWith('/api/admin/tt/') || p === '/api/admin/intcfg' || p.startsWith('/api/admin/ai/')) {
       if (!admin) return err('للأدمن فقط', 403);
       try {
         if (p === '/api/admin/oauth/start' && m === 'POST') return J({ url: await IG.oauthStart(env, url.origin, body.provider === 'tiktok' ? 'tiktok' : 'youtube') });
         if (p === '/api/admin/oauth/disconnect' && m === 'POST') { await IG.disconnect(env, body.provider); await log(env, u.email, 'فصل ' + body.provider); return J({ ok: true }); }
         if (p === '/api/admin/intcfg' && m === 'POST') { await put(env, 'intcfg', { ytAuto: !!body.ytAuto }); await log(env, u.email, 'الرد التلقائي على يوتيوب: ' + (body.ytAuto ? 'تشغيل' : 'إيقاف')); return J({ ok: true }); }
+        if (p === '/api/admin/ai/cfg' && m === 'POST') { const c = await IG.aiCfg(env); const b = body || {}; if (b.provider !== undefined) c.provider = IG.AI_PROVIDERS[b.provider] ? b.provider : ''; if (typeof b.model === 'string') c.model = clip(b.model, 80).replace(/[^\w.\-:\/]/g, ''); if (['off', 'review', 'auto'].includes(b.mode)) c.mode = b.mode; if (typeof b.tone === 'string') c.tone = clip(b.tone, 800); if (b.maxLen) c.maxLen = Math.min(500, Math.max(60, +b.maxLen || 280)); if (typeof b.signature === 'string') c.signature = clip(b.signature, 60); await put(env, 'aicfg', c); await log(env, u.email, 'إعدادات الذكاء الاصطناعي: ' + (c.provider || '-') + ' / ' + c.mode); return J(c); }
+        if (p === '/api/admin/ai/draft' && m === 'POST') { const c = await IG.aiCfg(env); if (IG.AI_PROVIDERS[body.provider]) c.provider = body.provider; if (typeof body.model === 'string' && body.model) c.model = clip(body.model, 80).replace(/[^\w.\-:\/]/g, ''); if (typeof body.tone === 'string' && body.tone) c.tone = clip(body.tone, 800); return J(await IG.aiReply(env, c, { comment: clip(body.comment, 600), video: clip(body.video, 120), by: clip(body.by, 40) })); }
         if (p === '/api/admin/yt/analytics') return J(await IG.ytAnalytics(env, Number(url.searchParams.get('days')) || 28));
         if (p === '/api/admin/yt/sync' && m === 'POST') { const rules = await get(env, 'rules', []); const r = await IG.ytSync(env, rules, { dry: !!body.dry }); if (!body.dry) await put(env, 'rules', rules); return J(r); }
         if (p === '/api/admin/yt/upload' && m === 'POST') { const r = await IG.ytUpload(env, body); await log(env, u.email, 'رفع فيديو يوتيوب ' + r.id); return J(r); }
