@@ -43,35 +43,25 @@ function pEpisodes() {
 }
 function pExplore(cat) {
   const { cats, items } = S.home; cat = String(cat || (window.HQ && HQ.get('cat')) || '');
-  const st = { cat: cats.some(c => c.id === cat) ? cat : '', type: '', q: '', sort: 'new' };
-  const SORTS = { new: 'الأحدث', old: 'الأقدم', views: 'الأكثر مشاهدة', short: 'الأقصر وقتاً' };
+  const st = { cat: cats.some(c => c.id === cat) ? [cat] : [], type: [], q: '', sort: 'new' };
+  const SORTS = [['new', 'الأحدث'], ['old', 'الأقدم'], ['views', 'الأكثر مشاهدة'], ['short', 'الأقصر وقتاً']];
   shell(`<section class="s"><div class="wrap"><div class="h2">استكشف</div>
-  <div class="bar"><input id="q" type="search" placeholder="ابحث عن معلومة..." aria-label="بحث" style="max-width:320px"></div>
-  <div class="bar" id="fc" role="group" aria-label="التصنيف"></div><div class="bar" id="ft" role="group" aria-label="النوع"></div>
-  <div class="bar xbar"><small id="xn" aria-live="polite"></small><select id="xs" aria-label="الترتيب">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><button class="btn sm xt" id="xt" type="button" aria-expanded="false"></button><button class="btn sm" id="xc" type="button" hidden>مسح الفلاتر</button></div>
+  <div id="sfh"></div><p class="xn" id="xn" aria-live="polite"></p>
   <div class="grid" id="res"></div></div></section>`, '/explore');
-  const chip = (on, a, v, t, n, col) => `<span class="chip ${on ? 'on' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-${a}="${v}"${col ? ` style="--cc:${col}"` : ''}>${t}${n != null ? `<em>${n}</em>` : ''}</span>`;
+  const cfg = { id: 'explore', state: st, items, ph: 'ابحث عن معلومة...', onChange: () => draw(), sorts: SORTS,
+    groups: [{ key: 'cat', label: 'التصنيف', get: i => i.cat, opts: cats.map(c => ({ v: c.id, t: c.name, color: c.color })) }, { key: 'type', label: 'النوع', get: i => i.type, opts: Object.entries(TYPES).map(([v, t]) => ({ v, t })) }],
+    presets: [{ t: 'الأحدث', set: s => s.sort = 'new' }, { t: 'الأكثر مشاهدة', set: s => s.sort = 'views' }, { t: 'قراءة سريعة (الأقصر وقتاً)', set: s => s.sort = 'short' }, { t: 'فيديوهات فقط', set: s => s.type = ['video'] }] };
   const draw = () => {
-    $('#fc').innerHTML = chip(!st.cat, 'c', '', 'الكل', items.length) + cats.map(c => chip(st.cat === c.id, 'c', c.id, esc(c.name), items.filter(i => i.cat === c.id).length, c.color)).join('');
-    $('#ft').innerHTML = chip(!st.type, 't', '', 'كل الأنواع', items.length) + Object.entries(TYPES).map(([k, v]) => chip(st.type === k, 't', k, v, items.filter(i => i.type === k).length)).join('');
+    sfRender($('#sfh'), cfg);
     const q = st.q.trim().toLowerCase();
-    const r = items.filter(i => (!st.cat || i.cat === st.cat) && (!st.type || i.type === st.type) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
+    const r = items.filter(i => (!st.cat.length || st.cat.includes(i.cat)) && (!st.type.length || st.type.includes(i.type)) && (!q || (i.title + i.summary + (i.tags || []).join(' ')).toLowerCase().includes(q)));
     const by = { new: (a, b) => (b.publishAt || 0) - (a.publishAt || 0), old: (a, b) => (a.publishAt || 0) - (b.publishAt || 0), views: (a, b) => (b.views || 0) - (a.views || 0), short: (a, b) => (a.minutes || 0) - (b.minutes || 0) };
     r.sort(by[st.sort]);
-    const dirty = st.cat || st.type || q;
-    $('#xt').textContent = 'النوع: ' + (st.type ? TYPES[st.type] : 'الكل') + ' ▾';
     $('#xn').textContent = r.length ? `${fmt(r.length)} نتيجة` : '';
-    $('#xc').hidden = !dirty;
     $('#res').innerHTML = r.length ? r.map(card).join('') : `<div style="grid-column:1/-1">${emptyBox('لا نتائج. جرّب كلمة أخرى أو امسح الفلاتر.')}</div>`;
-    try { history.replaceState(null, '', '#/explore' + (st.cat ? '/' + st.cat : '')); } catch (e) {}
+    try { history.replaceState(null, '', '#/explore' + (st.cat.length === 1 ? '/' + st.cat[0] : '')); } catch (e) {}
   };
-  draw(); $('#fc').scrollLeft = 0;
-  $('#q').oninput = e => { st.q = e.target.value; draw(); };
-  $('#xt').onclick = () => { const o = $('#ft').classList.toggle('open'); $('#xt').setAttribute('aria-expanded', o); };
-  $('#xs').onchange = e => { st.sort = e.target.value; draw(); };
-  $('#xc').onclick = () => { st.cat = ''; st.type = ''; st.q = ''; $('#q').value = ''; draw(); };
-  const pick = e => { const t = e.target.closest('.chip'); if (!t) return; if (t.dataset.c !== undefined) st.cat = t.dataset.c; else if (t.dataset.t !== undefined) st.type = t.dataset.t; else return; draw(); const on = document.querySelector('#' + (t.dataset.c !== undefined ? 'fc' : 'ft') + ' .on'); if (on) on.focus({ preventScroll: true }); };
-  ['#fc', '#ft'].forEach(id => { $(id).onclick = pick; $(id).onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e); } }; });
+  draw();
 }
 async function pItem(id) {
   let d; try { d = await api('/items/' + id); } catch { return shell(emptyBox('المحتوى غير موجود'), ''); }

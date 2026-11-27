@@ -68,3 +68,47 @@ addEventListener('scroll', () => {
   h.classList.toggle('hide', !open && y > _ly + 4 && y > 400); if (y < _ly - 4) h.classList.remove('hide');
   _ly = y;
 }, { passive: true });
+
+/* smart filter bar: multi-select popovers with counts, active tags, sort, presets + saved views */
+const SFO = {};
+function sfRender(host, cfg) {
+  const s = cfg.state, id = cfg.id, G = cfg.groups;
+  G.forEach(g => { if (!Array.isArray(s[g.key])) s[g.key] = s[g.key] ? [s[g.key]] : []; });
+  const pass = (i, skip) => G.every(g => g.key === skip || !s[g.key].length || s[g.key].includes(g.get(i))) && (!cfg.extra || cfg.extra(i, s));
+  const cnt = (g, v) => cfg.items.filter(i => pass(i, g.key) && g.get(i) === v).length;
+  const VK = 'kt_sf_' + id, views = () => { try { return JSON.parse(localStorage.getItem(VK) || '[]'); } catch (e) { return []; } };
+  const setViews = v => { try { localStorage.setItem(VK, JSON.stringify(v.slice(0, 12))); } catch (e) {} };
+  const nm = (g, v) => (g.opts.find(o => o.v === v) || { t: v }).t;
+  const ico = { cv: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>', bm: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>', sr: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>' };
+  const tags = [];
+  G.forEach(g => s[g.key].forEach(v => tags.push({ t: nm(g, v), k: g.key, v, col: (g.opts.find(o => o.v === v) || {}).color })));
+  if (s.q) tags.push({ t: '«' + s.q + '»', k: 'q' });
+  (cfg.tags ? cfg.tags(s) : []).forEach((x, n) => tags.push({ ...x, k: 'x', v: n }));
+  const open = SFO[id] || '';
+  const grp = g => { const n = s[g.key].length, o = open === g.key; return `<div class="sfb"><button type="button" class="sfbt${n ? ' on' : ''}" data-o="${g.key}" aria-expanded="${o}" aria-haspopup="true"><span>${esc(g.label)}</span>${n ? `<b>${n}</b>` : ''}${ico.cv}</button>${o ? `<div class="sfp" role="dialog" aria-label="${esc(g.label)}"><div class="sfh"><b>${esc(g.label)}</b>${n ? `<button type="button" class="lk" data-gc="${g.key}">مسح</button>` : ''}<button type="button" class="lk" data-cl="1">تم</button></div><div class="sfl">${g.opts.map(o2 => { const c = cnt(g, o2.v), on = s[g.key].includes(o2.v); return `<label class="sfo${on ? ' on' : ''}${c ? '' : ' z'}"><input type="checkbox" data-g="${g.key}" data-v="${esc(o2.v)}" ${on ? 'checked' : ''}>${o2.color ? `<i style="background:${o2.color}"></i>` : '<i class="nb"></i>'}<span>${esc(o2.t)}</span><em>${c}</em></label>`; }).join('')}</div></div>` : ''}</div>`; };
+  const vs = views(), vo = open === '_v';
+  const viewsBtn = `<div class="sfb"><button type="button" class="sfbt${vo ? ' on' : ''}" data-o="_v" aria-expanded="${vo}" aria-label="عروض جاهزة ومحفوظة">${ico.bm}<span>عروض</span></button>${vo ? `<div class="sfp" role="dialog" aria-label="عروض"><div class="sfh"><b>عروض سريعة</b><button type="button" class="lk" data-cl="1">تم</button></div><div class="sfl">${(cfg.presets || []).map((p, n) => `<button type="button" class="sfr" data-ps="${n}">${esc(p.t)}</button>`).join('')}${vs.length ? `<div class="sfs">محفوظاتي</div>` : ''}${vs.map((v, n) => `<div class="sfv"><button type="button" class="sfr" data-sv="${n}">${esc(v.name)}</button><button type="button" class="sfx" data-dv="${n}" aria-label="حذف العرض">×</button></div>`).join('')}</div><div class="sfsv"><input id="sfn" maxlength="24" placeholder="احفظ الفلاتر الحالية باسم"><button type="button" class="btn sm" data-svn="1">حفظ</button></div></div>` : ''}</div>`;
+  host.innerHTML = `<div class="sf"><label class="sfq">${ico.sr}<input type="search" id="sfq" value="${esc(s.q || '')}" placeholder="${esc(cfg.ph || 'ابحث')}" aria-label="بحث"></label><div class="sfrow">${G.map(grp).join('')}<select id="sfs" aria-label="الترتيب">${cfg.sorts.map(([k, t]) => `<option value="${k}" ${s.sort === k ? 'selected' : ''}>${t}</option>`).join('')}</select>${viewsBtn}</div>${cfg.after || ''}</div>
+  ${tags.length ? `<div class="sft">${tags.map((t, n) => `<span class="chip on"${t.col ? ` style="--cc:${t.col}"` : ''}>${esc(t.t)}<button type="button" data-tg="${n}" aria-label="إزالة الفلتر">×</button></span>`).join('')}<button type="button" class="lk" data-all="1">مسح الكل</button></div>` : ''}${open ? '<div class="sfk" data-cl="1"></div>' : ''}`;
+  const ch = () => { cfg.onChange(); };
+  const reset = () => { G.forEach(g => s[g.key] = []); s.q = ''; if (cfg.reset) cfg.reset(s); };
+  const q = host.querySelector('#sfq');
+  q.oninput = () => { s.q = q.value; clearTimeout(sfRender.t); sfRender.t = setTimeout(() => { SFO.fq = id; ch(); }, 250); };
+  if (SFO.fq === id) { SFO.fq = ''; q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  host.querySelector('#sfs').onchange = e => { s.sort = e.target.value; ch(); };
+  const keep = () => { const l = host.querySelector('.sfl'); return l ? l.scrollTop : 0; };
+  host.onclick = e => {
+    const t = e.target.closest('button,[data-cl]'); if (!t) return;
+    if (t.dataset.o) { SFO[id] = open === t.dataset.o ? '' : t.dataset.o; return sfRender(host, cfg); }
+    if (t.dataset.cl) { SFO[id] = ''; return sfRender(host, cfg); }
+    if (t.dataset.gc) { s[t.dataset.gc] = []; return ch(); }
+    if (t.dataset.all) { reset(); return ch(); }
+    if (t.dataset.tg !== undefined) { const x = tags[+t.dataset.tg]; if (x.k === 'q') s.q = ''; else if (x.k === 'x') x.clear(s); else s[x.k] = s[x.k].filter(v => v !== x.v); return ch(); }
+    if (t.dataset.ps !== undefined) { reset(); cfg.presets[+t.dataset.ps].set(s); SFO[id] = ''; return ch(); }
+    if (t.dataset.sv !== undefined) { reset(); Object.assign(s, JSON.parse(JSON.stringify(vs[+t.dataset.sv].s))); SFO[id] = ''; return ch(); }
+    if (t.dataset.dv !== undefined) { vs.splice(+t.dataset.dv, 1); setViews(vs); return sfRender(host, cfg); }
+    if (t.dataset.svn) { const n = host.querySelector('#sfn').value.trim(); if (!n) return host.querySelector('#sfn').focus(); vs.unshift({ name: n, s: JSON.parse(JSON.stringify(s)) }); setViews(vs); return sfRender(host, cfg); }
+  };
+  host.onchange = e => { const c = e.target; if (c.dataset.g) { const a = s[c.dataset.g], v = c.dataset.v; s[c.dataset.g] = c.checked ? [...a, v] : a.filter(x => x !== v); const y = keep(); ch(); const l = host.querySelector('.sfl'); if (l) l.scrollTop = y; } };
+  host.onkeydown = e => { if (e.key === 'Escape' && SFO[id]) { SFO[id] = ''; sfRender(host, cfg); } };
+}
