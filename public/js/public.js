@@ -35,11 +35,15 @@ function pHome() {
   <section class="s" style="padding-top:0"><div class="wrap"><div class="band"><div class="tapeline" aria-hidden="true"><span>كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر ✦ كنت تعرف؟ ✦ اعرف أكتر</span></div><h2>جاهز تعرف أكثر؟</h2><a class="btn" href="#/signup">انضم مجاناً</a></div></div></section>`, '/');
   initHero(items);
 }
+let EPC = '';
 function pEpisodes() {
-  const eps = S.home.items.filter(i => i.ep).sort((a, b) => b.ep - a.ep);
-  shell(`<section class="s"><div class="wrap"><div class="h2">الحلقات<small>حلقة جديدة كل يوم، من الأحدث إلى الأقدم</small></div>
-  <div class="grid" style="grid-template-columns:1fr;max-width:760px">${eps.map(i => `<a class="card" href="#/item/${esc(i.id)}" ><div style="aspect-ratio:16/9;border-bottom:var(--b);background:var(--ink);display:grid;place-items:center">${i.cover ? `<img src="${esc(i.cover)}" alt="${esc(i.title)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">` : mascot()}</div>
-  <div class="bd"><div class="meta"><span class="pill y">حلقة ${i.ep}</span><span>${esc(catOf(i.cat).name)}</span><span>${i.minutes} د</span></div><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></div></a>`).join('') || emptyBox('الحلقات قريباً')}</div></div></section>`, '/episodes');
+  const all = S.home.items.filter(i => i.ep).sort((a, b) => b.ep - a.ep), cs = [...new Set(all.map(i => i.cat))];
+  if (EPC && !cs.includes(EPC)) EPC = '';
+  const eps = all.filter(i => !EPC || i.cat === EPC);
+  shell(`<section class="s"><div class="wrap"><div class="h2">الحلقات<small>${all.length} حلقة، الأحدث أولاً</small></div>
+  ${cs.length > 1 ? `<div class="bar strip epf" role="group" aria-label="السلسلة"><button class="chip${!EPC ? ' on' : ''}" data-c="">الكل</button>${cs.map(c => `<button class="chip${EPC === c ? ' on' : ''}" data-c="${esc(c)}">${esc(catOf(c).name)}</button>`).join('')}</div>` : ''}
+  <div class="epl">${eps.map(i => `<a class="epr" href="#/item/${esc(i.id)}"><span class="epc">${i.cover ? `<img src="${esc(i.cover)}" alt="" loading="lazy">` : mascot()}<b>${i.ep}</b></span><span class="epb"><span class="meta"><span>${esc(catOf(i.cat).name)}</span><span>${i.minutes} د</span></span><h3>${esc(i.title)}</h3><p>${esc(i.summary)}</p></span></a>`).join('') || emptyBox('الحلقات قريباً')}</div></div></section>`, '/episodes');
+  document.querySelectorAll('.epf [data-c]').forEach(b => b.onclick = () => { EPC = b.dataset.c; pEpisodes(); });
 }
 function pExplore(cat) {
   const { cats, items } = S.home; cat = String(cat || (window.HQ && HQ.get('cat')) || '');
